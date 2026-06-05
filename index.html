@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#080608" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Protagonist" />
@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="protagonist-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
 
   <style>
     /* ═══════════════════════════════════════════
@@ -21,41 +21,42 @@
     ═══════════════════════════════════════════ */
     :root {
       /* Backgrounds */
-      --bg:          #0a0a0a;
-      --card:        #111111;
-      --card-2:      #181818;
+      --bg:          #080608;
+      --card:        #0f0c10;
+      --card-2:      #171218;
 
       /* Borders */
-      --border:      #2a1f0e;
-      --border-soft: #1e1e1e;
+      --border:      #3a2810;
+      --border-soft: #1f1620;
 
       /* Text */
-      --text:        #e8e4dc;
-      --muted:       #6b6760;
+      --text:        #e8d9b0;
+      --muted:       #6e5f44;
 
       /* Accent */
-      --gold:        #c9a84c;
-      --gold-dim:    #9c7f38;
-      --gold-glow:   rgba(201,168,76,0.18);
-      --amber:       #5a3e1b;
+      --gold:        #d4a52a;
+      --gold-bright: #f2c040;
+      --gold-dim:    #8a6718;
+      --gold-glow:   rgba(212,165,42,0.22);
+      --amber:       #4a2e08;
 
       /* Stat colours */
-      --strength:    #e05c5c;
-      --wisdom:      #6b9fff;
-      --discipline:  #a78bfa;
-      --charisma:    #f472b6;
-      --creativity:  #34d399;
+      --strength:    #c44b3a;
+      --wisdom:      #5b85d4;
+      --discipline:  #8b6fd4;
+      --charisma:    #c45a8e;
+      --creativity:  #3db87a;
 
       /* Radii */
-      --radius:      14px;
-      --radius-sm:   8px;
+      --radius:      6px;
+      --radius-sm:   4px;
 
       /* Nav */
       --nav-h:       64px;
 
       /* Fonts */
-      --font-display: 'Fredoka One', cursive;
-      --font-body:    'DM Sans', sans-serif;
+      --font-display: 'Cinzel', serif;
+      --font-body:    'IM Fell English', serif;
     }
 
     /* ── Reset ── */
@@ -156,8 +157,8 @@
       left: 0;
       right: 0;
       height: var(--nav-h);
-      background: var(--card);
-      border-top: 1px solid var(--border);
+      background: #0a0810;
+      border-top: 1px solid var(--gold-dim);
       display: none;
       align-items: stretch;
       flex-shrink: 0;
@@ -189,10 +190,10 @@
     }
 
     .nav-label {
-      font-family: var(--font-body);
-      font-size: 0.6rem;
+      font-family: var(--font-display);
+      font-size: 0.52rem;
       font-weight: 500;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
@@ -230,9 +231,9 @@
       inset: 0;
       background: linear-gradient(
         to bottom,
-        rgba(10,10,10,0.55) 0%,
-        rgba(10,10,10,0.82) 45%,
-        rgba(10,10,10,0.97) 100%
+        rgba(8,6,8,0.55) 0%,
+        rgba(8,6,8,0.82) 45%,
+        rgba(8,6,8,0.97) 100%
       );
       z-index: 1;
     }
@@ -272,15 +273,15 @@
     .char-icon-wrap {
       width: 152px;
       height: 152px;
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
+      border: 2px solid var(--gold-dim);
+      border-radius: var(--radius-sm);
+      background: #0a0810;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       margin-bottom: 14px;
-      box-shadow: 0 0 24px rgba(201,168,76,0.12);
+      box-shadow: 0 0 32px rgba(212,165,42,0.18), inset 0 0 0 1px var(--gold-dim);
     }
 
     .char-icon-img {
@@ -330,9 +331,9 @@
     .char-xp-bar-track {
       width: 100%;
       height: 12px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      background: #0a0810;
+      border: 1px solid var(--gold-dim);
+      border-radius: 2px;
       overflow: hidden;
       position: relative;
     }
@@ -340,8 +341,8 @@
     /* Castle Crashers segmented XP bar */
     .char-xp-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
-      border-radius: 6px;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold), var(--gold-bright));
+      border-radius: 2px;
       transition: width 0.6s ease;
       position: relative;
     }
@@ -375,7 +376,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(17,17,17,0.82);
+      background: rgba(12,9,16,0.88);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 9px 12px;
@@ -429,16 +430,16 @@
     .char-stat-bar-track {
       width: 100%;
       height: 8px;
-      background: var(--card);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 4px;
+      background: #0a0810;
+      border: 1px solid rgba(212,165,42,0.15);
+      border-radius: 2px;
       overflow: hidden;
       position: relative;
     }
 
     .char-stat-bar-fill {
       height: 100%;
-      border-radius: 4px;
+      border-radius: 1px;
       transition: width 0.5s ease;
     }
 
@@ -466,20 +467,22 @@
 
     .screen-header {
       padding: 52px 20px 16px;
-      border-bottom: 1px solid var(--border-soft);
+      border-bottom: 1px solid var(--gold-dim);
     }
 
     .screen-title {
       font-family: var(--font-display);
       font-size: 1.6rem;
-      color: var(--gold);
-      letter-spacing: 0.01em;
+      color: var(--gold-bright);
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 20px rgba(242,192,64,0.25);
     }
 
     .screen-sub {
       font-size: 0.78rem;
       color: var(--muted);
       margin-top: 3px;
+      font-style: italic;
     }
 
     /* ═══════════════════════════════════════════
@@ -493,7 +496,7 @@
     .vault-tab-bar {
       display: flex;
       gap: 0;
-      border-bottom: 1px solid var(--border-soft);
+      border-bottom: 1px solid var(--gold-dim);
       padding: 0 16px;
       flex-shrink: 0;
     }
@@ -504,10 +507,10 @@
       border: none;
       border-bottom: 2px solid transparent;
       color: var(--muted);
-      font-family: var(--font-body);
-      font-size: 0.78rem;
+      font-family: var(--font-display);
+      font-size: 0.68rem;
       font-weight: 500;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       padding: 12px 0;
       cursor: pointer;
@@ -515,8 +518,8 @@
       -webkit-tap-highlight-color: transparent;
     }
     .vault-tab.active {
-      color: var(--gold);
-      border-bottom-color: var(--gold);
+      color: var(--gold-bright);
+      border-bottom-color: var(--gold-bright);
     }
 
     /* ── Vault grid ── */
@@ -528,7 +531,7 @@
     }
 
     .vault-card {
-      background: var(--card);
+      background: linear-gradient(160deg, #120e1a 0%, #0c0910 100%);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       overflow: hidden;
@@ -545,6 +548,7 @@
 
     .vault-card.equipped {
       border-color: var(--gold);
+      box-shadow: 0 0 14px rgba(212,165,42,0.2), inset 0 0 0 1px rgba(212,165,42,0.08);
     }
 
     .vault-card.locked {
@@ -559,7 +563,9 @@
     }
 
     .vault-card-name {
-      font-size: 0.72rem;
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
       color: var(--text);
       text-align: center;
       line-height: 1.3;
@@ -577,7 +583,7 @@
       top: 6px;
       left: 6px;
       font-size: 0.75rem;
-      color: var(--gold);
+      color: var(--gold-bright);
     }
 
     /* ── Vault lock tooltip ── */
@@ -587,6 +593,7 @@
       text-align: center;
       line-height: 1.4;
       padding: 0 4px;
+      font-style: italic;
     }
 
     /* ═══════════════════════════════════════════
@@ -791,6 +798,7 @@
           <img id="char-callsign-img" class="char-callsign-img"
                src="callsign-wanderer.png" alt="Callsign" />
         </div>
+        <div id="char-callsign-name" style="font-family:var(--font-display);font-size:0.72rem;letter-spacing:0.12em;color:var(--gold-bright);text-transform:uppercase;margin-top:-6px;margin-bottom:10px;text-align:center;text-shadow:0 0 12px rgba(212,165,42,0.4);"></div>
 
         <!-- Character icon -->
         <div class="char-icon-wrap">
@@ -1979,7 +1987,11 @@ function renderCharacter() {
   const ovl = overallLevel();
 
   // Callsign + icon + prestige
-  document.getElementById('char-callsign-img').src = getEquippedCallsign();
+  const equippedCallsignFile = getEquippedCallsign();
+  document.getElementById('char-callsign-img').src = equippedCallsignFile;
+  const callsignEntry = CATALOG.callsigns.find(c => c.file === equippedCallsignFile);
+  const callsignNameEl = document.getElementById('char-callsign-name');
+  if (callsignNameEl) callsignNameEl.textContent = callsignEntry ? callsignEntry.name : '';
   document.getElementById('char-icon-img').src     = getEquippedIcon();
   const pImg = document.getElementById('char-prestige-img');
   const ep = getEquippedPrestige();
@@ -2116,7 +2128,7 @@ function renderVault(tab) {
       ${isEquipped ? '<span class="vault-equip-tick">✓</span>' : ''}
       ${!unlocked  ? '<span class="vault-lock-badge">🔒</span>' : ''}
       <img class="vault-card-img" src="${item.file}" alt="${item.name}"
-           onerror="this.style.opacity='0.2'">
+           onerror="this.style.background='#1a1020';this.style.opacity='0.3';this.src=''">
       <div class="vault-card-name">${item.name}</div>
       ${!unlocked ? `<div class="vault-lock-info">${item.cond}</div>` : ''}
     </div>`;
