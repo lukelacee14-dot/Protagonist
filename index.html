@@ -1056,14 +1056,1418 @@
 
 </div><!-- /app -->
 
-<!-- JS will be added in Step 2 -->
 <script>
-  // Service worker registration (works now, JS logic added in later steps)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
+'use strict';
+
+/* ═══════════════════════════════════════════
+   SERVICE WORKER
+═══════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+/* ═══════════════════════════════════════════
+   STORAGE KEYS
+═══════════════════════════════════════════ */
+const K = {
+  callsign:  'ff_char_callsign',
+  icon:      'ff_char_icon',
+  prestige:  'ff_char_prestige',
+  counters:  'ff_char_counters',
+  unlocks:   'ff_char_unlocks',
+  xp:        'ff_char_xp',
+  level:     'ff_char_level',
+  logs:      'ff_char_logs',
+};
+
+const STATS = ['strength','wisdom','discipline','charisma','creativity'];
+const STAT_META = {
+  strength:   { name:'Strength',   color:'#e05c5c' },
+  wisdom:     { name:'Wisdom',     color:'#6b9fff' },
+  discipline: { name:'Discipline', color:'#a78bfa' },
+  charisma:   { name:'Charisma',   color:'#f472b6' },
+  creativity: { name:'Creativity', color:'#34d399' },
+};
+const MAX_LEVEL = 50;
+
+function xpForLevel(lv) {
+  if (lv <= 5)  return 500;
+  if (lv <= 15) return 1000;
+  if (lv <= 30) return 2500;
+  if (lv <= 45) return 5000;
+  return 10000;
+}
+
+/* ═══════════════════════════════════════════
+   LOCAL STORAGE HELPERS
+═══════════════════════════════════════════ */
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e) { return fallback; }
+}
+function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function getXP()       { return load(K.xp,      { strength:0, wisdom:0, discipline:0, charisma:0, creativity:0, overall:0 }); }
+function getLevels()   { return load(K.level,    { strength:1, wisdom:1, discipline:1, charisma:1, creativity:1, overall:1 }); }
+function getCounters() { return load(K.counters, {}); }
+function getUnlocks()  { return load(K.unlocks,  {}); }
+function getLogs()     { return load(K.logs,     {}); }
+function getCounter(k) { return getCounters()[k] || 0; }
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+/* ═══════════════════════════════════════════
+   XP + LEVELLING
+═══════════════════════════════════════════ */
+function overallLevel() {
+  const lv = getLevels();
+  return Math.max(1, Math.floor(STATS.reduce((s,k) => s + lv[k], 0) / STATS.length));
+}
+
+function statTier(level) {
+  if (level <= 10) return 1;
+  if (level <= 20) return 2;
+  if (level <= 30) return 3;
+  if (level <= 40) return 4;
+  return 5;
+}
+
+function addXP(stat, baseXP) {
+  const xpData = getXP();
+  const lvData = getLevels();
+  let xp = xpData[stat] + baseXP;
+  let lv = lvData[stat];
+  let levelsGained = 0;
+  while (lv < MAX_LEVEL) {
+    const needed = xpForLevel(lv);
+    if (xp >= needed) { xp -= needed; lv++; levelsGained++; } else break;
   }
+  if (lv >= MAX_LEVEL) { lv = MAX_LEVEL; }
+  xpData[stat] = xp;
+  lvData[stat] = lv;
+  // recalc overall
+  const newOverall = Math.max(1, Math.floor(STATS.reduce((s,k) => s + lvData[k], 0) / STATS.length));
+  const oldOverall = lvData.overall;
+  lvData.overall = newOverall;
+  save(K.xp, xpData);
+  save(K.level, lvData);
+  if (levelsGained > 0) showLevelUpToast(STAT_META[stat].name, lv);
+  if (newOverall > oldOverall) showLevelUpToast('Overall', newOverall);
+  return { xp, lv, levelsGained, newOverall };
+}
+
+/* ═══════════════════════════════════════════
+   COOLDOWN / LOGS
+═══════════════════════════════════════════ */
+function isLoggedToday(stat, actName) {
+  return getLogs()[stat + '::' + actName] === todayStr();
+}
+function markLogged(stat, actName) {
+  const l = getLogs();
+  l[stat + '::' + actName] = todayStr();
+  save(K.logs, l);
+}
+
+/* ═══════════════════════════════════════════
+   COUNTERS
+═══════════════════════════════════════════ */
+const STREAK_KEYS = new Set([
+  'no-social-streak','language-streak','meditation-streak','no-alcohol-streak',
+  'no-junk-streak','sleep-streak','goals-streak','no-phone-morning-streak',
+  'digital-sunset-streak','temptation-streak','habit-avoided-streak','instrument-streak',
+  'home-workout-streak','language-sessions-streak',
+]);
+
+function incCounter(key, amount) {
+  if (!key) return;
+  const d = getCounters();
+  if (STREAK_KEYS.has(key)) {
+    const today = todayStr();
+    const lastKey = key + '_last';
+    const last = d[lastKey];
+    if (last) {
+      const diff = Math.round((new Date(today) - new Date(last)) / 86400000);
+      if (diff < 1) { /* already done today */ }
+      else if (diff === 1) { d[key] = (d[key] || 0) + 1; }
+      else { d[key] = 1; }
+    } else { d[key] = 1; }
+    d[lastKey] = today;
+  } else {
+    d[key] = (d[key] || 0) + (amount || 1);
+  }
+  save(K.counters, d);
+}
+
+/* ═══════════════════════════════════════════
+   ACTIVITIES DATA
+═══════════════════════════════════════════ */
+const ACTIVITIES = {
+  strength: [
+    { name:'Gym session 30+ min', xp:150, counter:'gym-sessions', questions:[
+      { text:'What was the first exercise you did and how many sets?', min:10 },
+      { text:'At what point did you start to feel fatigue — which exercise or set?', min:15 },
+      { text:'What muscle group felt most worked by the end?', min:10 },
+      { text:'Did you modify anything during the session — why?', min:15 },
+      { text:'What will you do differently next time?', min:15 },
+    ]},
+    { name:'Run or ride 30+ min', xp:120, counter:'run-sessions', questions:[
+      { text:'How far did you go and roughly how long did it take?', min:10 },
+      { text:'What was the hardest part of the route or effort?', min:15 },
+      { text:'How did your breathing feel in the last 10 minutes?', min:15 },
+      { text:'What time of day did you go and what were the conditions like?', min:10 },
+      { text:'What will you focus on improving next time?', min:15 },
+    ]},
+    { name:'Home workout 20+ min', xp:75, counter:'home-workout-sessions', questions:[
+      { text:'What specifically did you do — list the exercises?', min:10 },
+      { text:'How long did the session last and how did you structure it?', min:15 },
+      { text:'What was the hardest part and why?', min:15 },
+      { text:'Did anything go differently than planned?', min:10 },
+      { text:'What will you focus on next time?', min:15 },
+    ]},
+    { name:'Sport or physical activity', xp:100, counter:'sport-sessions', questions:[
+      { text:'What sport or activity did you do and for how long?', min:10 },
+      { text:'What was the most physically demanding moment?', min:15 },
+      { text:'How did your body feel during and after?', min:15 },
+      { text:'Was there anything competitive about it — how did that feel?', min:15 },
+      { text:'What would you do differently next time?', min:10 },
+    ]},
+    { name:'Personal best achieved', xp:300, counter:'personal-bests', questions:[
+      { text:'What was the personal best — be specific about the exercise, weight, distance or time?', min:15 },
+      { text:'What was your previous best and how much did you improve?', min:10 },
+      { text:'How did you feel physically in the moments before you attempted it?', min:15 },
+      { text:'Describe the moment you achieved it — what happened?', min:20 },
+      { text:'What does this personal best mean to you in terms of your progress?', min:20 },
+    ]},
+  ],
+  wisdom: [
+    { name:'Read a chapter of a non-fiction book', xp:100, counter:'chapters-read', questions:[
+      { text:'What book, author and chapter did you read?', min:10 },
+      { text:'What was the main argument or idea in this chapter?', min:20 },
+      { text:'What specific fact, example or story from this chapter stood out?', min:20 },
+      { text:'Did anything in this chapter connect to your own life? Describe it.', min:25 },
+      { text:'What question does this chapter leave you with?', min:15 },
+    ]},
+    { name:'Finished a non-fiction book', xp:500, counter:'books-finished', questions:[
+      { text:'What book and author did you finish?', min:5 },
+      { text:'What was the central argument of the whole book?', min:25 },
+      { text:'What was one specific story or example that stayed with you and why?', min:30 },
+      { text:'What is the single most important idea and how has it changed how you think?', min:25 },
+      { text:'If you had to recommend it, what would you say it is really about?', min:20 },
+    ]},
+    { name:'Learned a new language — session', xp:80, counter:'language-sessions', questions:[
+      { text:'What language, what platform or method, and how long?', min:10 },
+      { text:'What specifically did you work on — vocabulary, grammar, listening or speaking?', min:15 },
+      { text:'Give 3 words or phrases you learned or practised today and what they mean.', min:15 },
+      { text:'What was the hardest part of today and why?', min:15 },
+      { text:'What will you focus on in the next session?', min:10 },
+    ]},
+    { name:'Learned a new language — milestone', xp:400, counter:'language-milestones', questions:[
+      { text:'What language and what milestone did you reach?', min:10 },
+      { text:'Describe exactly how the milestone happened — where were you, what were you doing?', min:25 },
+      { text:'How long have you been learning and roughly how many sessions?', min:15 },
+      { text:'What was the moment just before the milestone that made you think it might happen?', min:20 },
+      { text:'What is the next milestone you are working toward?', min:15 },
+    ]},
+    { name:'Memorised something significant', xp:200, counter:'memorised-count', questions:[
+      { text:'What did you memorise — poem, speech, dates, formulas? Be specific.', min:10 },
+      { text:'How did you memorise it — what technique did you use?', min:20 },
+      { text:'What was the hardest section to memorise and why?', min:20 },
+      { text:'Write out a section from memory right now — pick the middle not the beginning.', min:20 },
+      { text:'What does knowing this by heart mean to you?', min:15 },
+    ]},
+    { name:'Taught someone else something', xp:175, counter:'taught-count', questions:[
+      { text:'What did you teach, who did you teach (relationship only) and how long?', min:10 },
+      { text:'How did you structure the session — what did you start with and why?', min:20 },
+      { text:'What question did the person ask that was hardest to answer?', min:20 },
+      { text:'At what point did you know they were starting to understand?', min:20 },
+      { text:'What did teaching this make you realise about your own understanding?', min:20 },
+    ]},
+    { name:'Completed a university assignment', xp:300, counter:'assignments-completed', questions:[
+      { text:'What subject, assignment type and approximate word count?', min:10 },
+      { text:'What was the central argument or finding of your assignment?', min:25 },
+      { text:'Name one specific source, theorist or framework you used and why you chose it.', min:20 },
+      { text:'What was the hardest part — research, writing or structure?', min:20 },
+      { text:"What did completing this teach you that lectures or readings didn't?", min:20 },
+    ]},
+    { name:'Passed an exam', xp:400, counter:'exams-passed', questions:[
+      { text:'What subject, level and type of exam?', min:5 },
+      { text:'What topic or section was hardest and why?', min:20 },
+      { text:"Was there a question that surprised you — something you didn't expect?", min:20 },
+      { text:'What did you do differently preparing for this exam?', min:20 },
+      { text:'What topic from this subject do you still feel least confident about?', min:15 },
+    ]},
+    { name:'Finished a university subject', xp:600, counter:'subjects-finished', questions:[
+      { text:'What subject, institution and level?', min:5 },
+      { text:'What were the 3 major themes covered across this subject?', min:25 },
+      { text:'What was the most challenging concept and how did you come to understand it?', min:25 },
+      { text:'What assessment was most demanding and what feedback did you receive?', min:20 },
+      { text:'How has completing this subject changed how you think about this field?', min:20 },
+    ]},
+    { name:'Finished a degree', xp:3000, counter:'degrees-completed', questions:[
+      { text:'What degree, institution and field?', min:5 },
+      { text:'What was the most challenging subject and what made it hard?', min:25 },
+      { text:'Describe your most significant piece of work across the entire degree.', min:30 },
+      { text:'What moment made you seriously question whether you were in the right field?', min:30 },
+      { text:'How are you different as a thinker now compared to when you started?', min:25 },
+      { text:'What was the most important thing your degree taught you that had nothing to do with the subject matter?', min:30 },
+    ]},
+    { name:'Changed my mind — saw alternative perspective', xp:250, counter:'mind-changed', questions:[
+      { text:'What did you used to believe or think — be specific.', min:20 },
+      { text:'What specifically triggered the change — a moment, realisation or something someone said?', min:25 },
+      { text:'Was there a moment of resistance where you wanted to dismiss the new information? Describe it.', min:25 },
+      { text:'What do you now believe and how is it specifically different from before?', min:25 },
+      { text:'What does this experience tell you about how you form beliefs in general?', min:20 },
+    ]},
+    { name:'Applied something learned to a real situation', xp:300, counter:'knowledge-applied', questions:[
+      { text:'What did you learn, where did you learn it and how long ago?', min:15 },
+      { text:'What real situation did you apply it to — what were the stakes?', min:25 },
+      { text:'What specifically did you do differently because of what you knew?', min:25 },
+      { text:'What happened as a result — did it work as expected?', min:20 },
+      { text:'What does this tell you about how you learn best?', min:20 },
+    ]},
+  ],
+  discipline: [
+    { name:'No social media today', xp:100, counter:'no-social-days', questions:[
+      { text:'Which platforms did you avoid and what day was it?', min:10 },
+      { text:'At what point was the urge strongest — what triggered it and what were you doing?', min:20 },
+      { text:'What did you do instead in the moments you would normally have reached for your phone?', min:20 },
+      { text:'How did your mental state feel differently today? Be specific not just better.', min:20 },
+      { text:'Are you planning to do this again tomorrow — what will make it easier or harder?', min:15 },
+    ]},
+    { name:'No phone for first hour after waking', xp:85, counter:'no-phone-mornings', questions:[
+      { text:'What time did you wake up and what was the very first thing you did?', min:10 },
+      { text:'Walk me through the first hour in order — what did you actually do?', min:25 },
+      { text:'Was there a specific moment where you reached for your phone out of habit — what happened?', min:20 },
+      { text:'How did your mental state feel going into the rest of your day?', min:20 },
+      { text:'What will make tomorrow easier or harder to do this again?', min:15 },
+    ]},
+    { name:'Digital sunset — no screens after set time', xp:90, counter:'digital-sunsets', questions:[
+      { text:'What time did you put screens away and what were you doing right before?', min:10 },
+      { text:'Walk me through what you did from screens off to when you fell asleep.', min:25 },
+      { text:'Was there a moment you were tempted to check just one more thing — describe it.', min:20 },
+      { text:'How did your mind feel when you got into bed?', min:20 },
+      { text:'What was the hardest part of the evening to fill without screens?', min:15 },
+    ]},
+    { name:'Deleted a social media app', xp:300, counter:'social-media-deleted', questions:[
+      { text:'Which app did you delete and how long had you had it?', min:10 },
+      { text:'What was the specific moment or experience that made you decide to delete it?', min:25 },
+      { text:'How long had you been thinking about deleting it and what kept stopping you?', min:20 },
+      { text:'Did you hesitate right before pressing delete — what went through your mind?', min:20 },
+      { text:'What are you hoping changes in your life now that it is gone?', min:20 },
+    ]},
+    { name:'Resisted a specific temptation', xp:150, counter:'temptation-resisted', questions:[
+      { text:'What was the temptation — be specific not vague.', min:15 },
+      { text:'Where were you, what time was it and what were you doing when it hit?', min:20 },
+      { text:'How strong was the pull — describe what it felt like not just a number.', min:20 },
+      { text:'Walk me through the exact moment you decided not to give in.', min:25 },
+      { text:'How do you feel now having resisted? Be specific and honest.', min:20 },
+    ]},
+    { name:'Avoided a known time wasting habit for a full day', xp:150, counter:'habit-avoided-days', questions:[
+      { text:'What habit did you avoid — describe specifically what you normally do.', min:20 },
+      { text:'How many times today did you feel the pull and at what points?', min:20 },
+      { text:'Walk me through the moments today where you would normally have fallen into it.', min:25 },
+      { text:"What did this habit give you that part of you didn't want to give up?", min:20 },
+      { text:'How did avoiding it affect your mood, energy or productivity today?', min:20 },
+    ]},
+    { name:'No alcohol today', xp:100, counter:'no-alcohol-days', questions:[
+      { text:'Was today a day where you would normally have drunk — describe the context.', min:15 },
+      { text:'If alcohol was present or available describe the situation.', min:15 },
+      { text:'How strong was the pull — describe it honestly.', min:15 },
+      { text:'Walk me through the hardest moment where not drinking was a conscious choice.', min:20 },
+      { text:'What does choosing not to drink today mean in terms of your broader goals?', min:20 },
+    ]},
+    { name:'No junk food today', xp:100, counter:'no-junk-days', questions:[
+      { text:'What is your personal definition of junk food for this log?', min:10 },
+      { text:'What did you actually eat today — give a genuine picture of your meals.', min:20 },
+      { text:'What was the hardest moment food-wise — what did you want that you didn\'t have?', min:20 },
+      { text:'Was there a social element — did someone offer you food you avoided?', min:15 },
+      { text:'What is driving your desire to avoid junk food — be honest with yourself.', min:20 },
+    ]},
+    { name:'Got 8 hours sleep', xp:100, counter:'sleep-days', questions:[
+      { text:'What time did you go to bed and what time did you wake up?', min:10 },
+      { text:'What did the hour before bed look like — what were you doing?', min:20 },
+      { text:'How did you feel when you woke up — describe physically and mentally.', min:20 },
+      { text:'Did you fall asleep easily or did it take a while — what was your mind doing?', min:20 },
+      { text:'What needs to change in your routine to make 8 hours the norm?', min:20 },
+    ]},
+    { name:'Completed a focused deep work session', xp:150, counter:'deep-work-sessions', questions:[
+      { text:'What specifically did you work on — exact task or problem, not just the subject.', min:15 },
+      { text:'What did you do to eliminate distractions before starting?', min:20 },
+      { text:'How long was the session and how did you structure it?', min:15 },
+      { text:'What was the hardest moment where you felt pulled toward distraction — what happened?', min:20 },
+      { text:'What did you actually produce or accomplish — be specific about the output.', min:20 },
+    ]},
+    { name:'Finished something you had been procrastinating on', xp:250, counter:'procrastination-finished', questions:[
+      { text:'What was the task and how long had you been putting it off?', min:15 },
+      { text:'What is the honest reason you kept not doing it — not the excuse but the real reason.', min:25 },
+      { text:'What finally made you start today?', min:20 },
+      { text:'Describe the moment you actually began — what did starting feel like?', min:20 },
+      { text:'Describe how you felt the moment you finished — be specific and honest.', min:20 },
+    ]},
+    { name:'Sat with boredom', xp:100, counter:'boredom-sessions', questions:[
+      { text:'How did you come to sit with boredom today — was it deliberate?', min:15 },
+      { text:'What was the strongest temptation pulling at you — what did you most want to reach for?', min:20 },
+      { text:'How long did you sit with it and how did time feel?', min:15 },
+      { text:'What did your mind do when it had nothing to consume — where did your thoughts go?', min:25 },
+      { text:'Did anything unexpected come up — a memory, idea, feeling or realisation? Describe it.', min:25 },
+    ]},
+    { name:'Meditated or practised mindfulness', xp:100, counter:'meditation-sessions', questions:[
+      { text:'What type of meditation or mindfulness practice and how long?', min:10 },
+      { text:'Describe what the first few minutes felt like — where was your mind?', min:20 },
+      { text:'Was there a moment during the session where something shifted — describe it specifically.', min:20 },
+      { text:'What was the hardest part — what pulled at your attention most?', min:20 },
+      { text:'How did you feel immediately after compared to before? Be specific.', min:20 },
+    ]},
+    { name:'Took dogs for walk or did housework', xp:80, counter:'care-sessions', questions:[
+      { text:'What did you do specifically — describe the walk route or what housework you completed.', min:15 },
+      { text:'Was this part of your routine or something you had been putting off?', min:15 },
+      { text:'What did you notice during the activity that you might not notice when distracted?', min:20 },
+      { text:'Was there a moment during the activity where your mind settled? Describe it.', min:15 },
+      { text:'How did completing this affect your mood or sense of control over your day?', min:15 },
+    ]},
+  ],
+  charisma: [
+    { name:"Called or visited a family member you don't see often", xp:125, counter:'family-calls', questions:[
+      { text:'Who did you contact — relationship only — and how long since you last properly spoke?', min:10 },
+      { text:'What prompted you to reach out today specifically?', min:20 },
+      { text:'What did you actually talk about — give a specific topic or moment.', min:20 },
+      { text:"Was there anything said that surprised you — something you didn't know or expect?", min:20 },
+      { text:'How did you feel after compared to before — be honest including if it was complicated.', min:20 },
+    ]},
+    { name:'Reached out to someone you lost touch with', xp:175, counter:'lost-connections', questions:[
+      { text:'Who — relationship only — and how long had it been?', min:10 },
+      { text:'What caused the drift — was it gradual, circumstantial or did something happen?', min:20 },
+      { text:'What was the real hesitation that had been stopping you before today?', min:20 },
+      { text:'What did you actually say — what was the tone and how did you open it?', min:20 },
+      { text:'How did they respond and how did you feel seeing or hearing their reaction?', min:20 },
+    ]},
+    { name:'Made a new friend or meaningful acquaintance', xp:200, counter:'new-connections', questions:[
+      { text:'How did you meet and what was the context?', min:15 },
+      { text:'What was the first thing that made you think this person was worth knowing?', min:20 },
+      { text:'Was there a specific moment where the interaction shifted from polite to genuine connection?', min:25 },
+      { text:'What did you learn about them that surprised or interested you?', min:20 },
+      { text:'What is it about this person that makes you want to know them better?', min:20 },
+    ]},
+    { name:'Had a conversation with a stranger that went beyond small talk', xp:150, counter:'stranger-conversations', questions:[
+      { text:'Where were you and how did the conversation start?', min:15 },
+      { text:'At what point did it shift from small talk to something more real?', min:20 },
+      { text:'What did this person share that surprised or moved you?', min:20 },
+      { text:'How did the conversation end and how did that feel?', min:15 },
+      { text:'Will you remember this person and why — what specifically will stay with you?', min:20 },
+    ]},
+    { name:'Spent quality time with a close friend fully present no phones', xp:150, counter:'friend-quality-time', questions:[
+      { text:'What did you do together and how long were you together?', min:15 },
+      { text:'How intentional was the phone-free element — did you both agree or did it happen naturally?', min:20 },
+      { text:'Was there a moment where you felt genuinely close to this person — describe it.', min:25 },
+      { text:"What did you talk about or experience that you wouldn't have if distracted by phones?", min:20 },
+      { text:'How did this time feel different from times when phones are present?', min:20 },
+    ]},
+    { name:'Had a difficult conversation you had been avoiding', xp:300, counter:'difficult-conversations', questions:[
+      { text:'How long had you been avoiding this and what was the real fear underneath?', min:25 },
+      { text:'What finally made today the day?', min:20 },
+      { text:'How did you open it — what were the first words and how did they respond?', min:20 },
+      { text:'What was the hardest thing you had to say and what did it feel like to say it?', min:25 },
+      { text:'How did it end and how do you feel now — be completely honest.', min:25 },
+    ]},
+    { name:'Apologised genuinely to someone', xp:200, counter:'apologies', questions:[
+      { text:'What did you do or fail to do that required an apology?', min:20 },
+      { text:'How long had you been carrying this and what kept stopping you?', min:20 },
+      { text:'How did you apologise and what did you actually say?', min:20 },
+      { text:'Did you make any excuses or qualifications — be honest.', min:15 },
+      { text:'How did the other person respond and how do you feel now?', min:20 },
+    ]},
+    { name:'Forgave someone', xp:300, counter:'forgiveness-count', questions:[
+      { text:'What happened that required forgiveness — describe what it cost you.', min:25 },
+      { text:'How long have you been carrying this and how has it affected you?', min:20 },
+      { text:'What shifted that allowed you to forgive?', min:25 },
+      { text:'What does forgiving actually mean to you — what are you and are not doing?', min:25 },
+      { text:'How do you feel now — be completely honest including if it feels incomplete.', min:20 },
+    ]},
+    { name:'Said no to someone when you normally would have said yes', xp:150, counter:'said-no-count', questions:[
+      { text:'What were you asked to do and why would you normally have said yes?', min:20 },
+      { text:'What did saying yes in the past cost you?', min:20 },
+      { text:'How did you say no — what were the actual words or substance?', min:15 },
+      { text:'Did you feel the pull to take it back or soften it — describe it.', min:20 },
+      { text:'How do you feel now — be honest including any guilt, relief or mix.', min:20 },
+    ]},
+    { name:'Stood up for yourself or someone else', xp:250, counter:'stood-up-count', questions:[
+      { text:'Describe what happened — what required someone to stand up and what was at stake?', min:25 },
+      { text:'What was your immediate internal response — describe the physical and emotional feeling.', min:20 },
+      { text:'What did you actually do or say — be specific.', min:20 },
+      { text:'How did people respond — both who you stood up to and who you stood up for?', min:20 },
+      { text:'How did it feel to stand up — be honest about the full range.', min:20 },
+    ]},
+    { name:'Went to a social event outside your comfort zone', xp:200, counter:'comfort-zone-events', questions:[
+      { text:'What was the event and why specifically was it outside your comfort zone?', min:20 },
+      { text:'What was the resistance that almost stopped you going?', min:20 },
+      { text:'Describe the first few minutes after you arrived — what did you feel?', min:20 },
+      { text:'Was there a turning point where the discomfort changed into something else?', min:20 },
+      { text:'How do you feel now compared to how you felt before you went?', min:20 },
+    ]},
+    { name:'Gave a genuine compliment that took courage', xp:150, counter:'courageous-compliments', questions:[
+      { text:'What did you say and why did it take courage?', min:20 },
+      { text:'How long had you been thinking about saying it?', min:15 },
+      { text:'How did you deliver it and why did you choose that way?', min:20 },
+      { text:'What happened in the moment you said it — describe the atmosphere.', min:20 },
+      { text:'How did you feel after — be honest including if it was awkward.', min:15 },
+    ]},
+    { name:'Asked for help — vulnerability as strength', xp:150, counter:'asked-for-help', questions:[
+      { text:'What did you need help with and why was asking difficult?', min:20 },
+      { text:'How long had you been managing this alone?', min:15 },
+      { text:'How did you ask — describe the actual words or substance.', min:15 },
+      { text:'What was your specific fear about asking?', min:20 },
+      { text:'How did it feel to receive help?', min:20 },
+    ]},
+    { name:'Organised or initiated a social gathering', xp:150, counter:'gatherings-organised', questions:[
+      { text:'What did you organise and what was the motivation?', min:15 },
+      { text:'What did it take to make it happen — who did you reach out to?', min:20 },
+      { text:"Was there a point where you almost didn't follow through — what happened?", min:20 },
+      { text:'Was there a moment during the gathering where you felt the value of having organised it?', min:25 },
+      { text:'How did it feel to be the person who made this happen?', min:20 },
+    ]},
+    { name:'Mentored or supported someone through something difficult', xp:250, counter:'mentored-count', questions:[
+      { text:'What was the person going through and what did they need from you?', min:20 },
+      { text:'What did showing up for this person cost you personally?', min:20 },
+      { text:'Describe what you actually did — not just "I listened" but what the interaction looked like.', min:25 },
+      { text:'Was there a moment where you wanted to fix it or give advice — how did you handle that?', min:20 },
+      { text:'How did you feel after — be honest about the emotional weight.', min:20 },
+    ]},
+    { name:'Had a vulnerable conversation with a partner', xp:275, counter:'vulnerable-partner-convos', questions:[
+      { text:'What did you share and what made it vulnerable — what were you exposing?', min:25 },
+      { text:'How long had you been carrying this without saying it?', min:15 },
+      { text:'What was the specific fear going in?', min:20 },
+      { text:'How did your partner respond and what was that moment like?', min:20 },
+      { text:'How has sharing this changed things between you?', min:20 },
+    ]},
+    { name:'Went on a date', xp:200, counter:'intentional-dates', questions:[
+      { text:'Was this a first date or intentional date with partner — and what did you do?', min:15 },
+      { text:'What did you put into making this happen — the planning, thought and effort?', min:20 },
+      { text:'Describe a specific moment during the date that stood out.', min:20 },
+      { text:'How present were you — were you genuinely there or did your mind wander?', min:20 },
+      { text:'How did you feel after compared to before?', min:20 },
+    ]},
+    { name:'Expressed love or appreciation to someone important', xp:175, counter:'expressed-love', questions:[
+      { text:'What did you express and to whom — relationship only — and what made it significant?', min:20 },
+      { text:'How long had you been feeling this without saying it?', min:15 },
+      { text:'How did you express it and why did you choose that way?', min:15 },
+      { text:'What happened in the moment — describe the texture of the exchange.', min:20 },
+      { text:'How did expressing this make you feel?', min:20 },
+    ]},
+  ],
+  creativity: [
+    { name:'Worked on a creative project', xp:120, counter:'creative-sessions', questions:[
+      { text:'What is the project and what specifically did you work on today?', min:15 },
+      { text:'How long were you working and how was the quality of your focus?', min:15 },
+      { text:"What went well and what didn't — be specific about both.", min:20 },
+      { text:'Was there a moment of genuine creative discovery or decision today? Describe it.', min:20 },
+      { text:'What problem or challenge are you currently facing with this project?', min:20 },
+    ]},
+    { name:'Finished a creative project', xp:500, counter:'projects-finished', questions:[
+      { text:'What did you make — describe it specifically.', min:20 },
+      { text:'How long did this take and what was the journey?', min:20 },
+      { text:'How did you know it was finished — describe that moment or decision.', min:20 },
+      { text:'What was the biggest difference between what you imagined at the start and what you made?', min:25 },
+      { text:'How do you feel about the finished work — be completely honest.', min:20 },
+    ]},
+    { name:'Built or made something with your hands', xp:150, counter:'things-made', questions:[
+      { text:'What did you make and what materials or tools did you use?', min:15 },
+      { text:'Walk me through the making process in order — what did you do first?', min:25 },
+      { text:'What was the most technically challenging part?', min:20 },
+      { text:'Did anything go wrong or not work as planned — what happened?', min:20 },
+      { text:'How did the physical act of making something feel?', min:20 },
+    ]},
+    { name:'Cooked or baked something from scratch', xp:100, counter:'cooked-from-scratch', questions:[
+      { text:'What did you make and where did the recipe or idea come from?', min:15 },
+      { text:'Walk me through the key steps and decisions you made along the way.', min:25 },
+      { text:'What was the most challenging part?', min:15 },
+      { text:'Did anything go differently than planned — did you adapt or substitute?', min:15 },
+      { text:'Who was this for and how did it turn out?', min:15 },
+    ]},
+    { name:'Practised an instrument', xp:100, counter:'instrument-sessions', questions:[
+      { text:'What instrument, what did you specifically practise and how long?', min:10 },
+      { text:'How did you structure the session — warm up, specific work, free play?', min:20 },
+      { text:"What went well and what are you still struggling with?", min:20 },
+      { text:'Was there a moment where something clicked or shifted? Describe it.', min:20 },
+      { text:'What will you focus on next session and what is your longer term goal?', min:15 },
+    ]},
+    { name:'Performed music in front of someone', xp:200, counter:'performances', questions:[
+      { text:'What did you perform, what instrument or voice, and who was there?', min:10 },
+      { text:'Was this planned or spontaneous and how did it come about?', min:15 },
+      { text:'What happened physically and emotionally in the moments before you started?', min:20 },
+      { text:'How did the performance go and was there a moment you felt genuinely in it?', min:20 },
+      { text:'How did performing feel different from practising alone?', min:20 },
+    ]},
+    { name:'Did public speaking or presented something', xp:200, counter:'public-speeches', questions:[
+      { text:'What did you speak about or present and who was the audience?', min:15 },
+      { text:'What was the specific fear going in?', min:20 },
+      { text:'Describe the first 60 seconds — what happened physically and emotionally when you began?', min:20 },
+      { text:'Was there a moment where something shifted — you found your rhythm or lost it?', min:20 },
+      { text:'How did it actually go compared to how you feared it would?', min:20 },
+    ]},
+    { name:'Wrote creatively', xp:110, counter:'creative-writing-sessions', questions:[
+      { text:'What form of writing and what did you write about or work on?', min:15 },
+      { text:'How long did you write and how was the quality of the session?', min:15 },
+      { text:'Was there a moment where something surprised you — a direction the piece took?', min:20 },
+      { text:"What was the hardest part of today's session?", min:20 },
+      { text:'Describe something you wrote today that you feel captures something true or interesting.', min:20 },
+    ]},
+    { name:'Took a class or lesson in a creative discipline', xp:125, counter:'creative-classes', questions:[
+      { text:'What discipline, what type of class and what level are you at?', min:10 },
+      { text:'What specifically was covered or worked on in this session?', min:20 },
+      { text:'What is one specific technique or concept you came away with? Explain it.', min:20 },
+      { text:'Was there a moment of genuine understanding or breakthrough? Describe it.', min:20 },
+      { text:'How does what you learned today connect to what you already knew?', min:20 },
+    ]},
+    { name:'Published or posted something creative publicly', xp:200, counter:'published-count', questions:[
+      { text:'What did you publish, where and who is the potential audience?', min:15 },
+      { text:'How long did you work on this before publishing?', min:10 },
+      { text:'Describe the moment you pressed publish — what were you feeling?', min:20 },
+      { text:'What was your greatest fear about making this public?', min:20 },
+      { text:'How do you feel now that it is out in the world?', min:20 },
+    ]},
+    { name:'Entered a competition or submitted work', xp:300, counter:'competitions-entered', questions:[
+      { text:'What did you submit and where?', min:10 },
+      { text:'What were the requirements and how did you approach meeting them?', min:20 },
+      { text:'What was the internal resistance that almost stopped you submitting?', min:20 },
+      { text:'What are you hoping for as an outcome and what are you afraid of?', min:20 },
+      { text:'Describe the specific moment of submitting — how did it feel?', min:20 },
+    ]},
+    { name:'Created something collaboratively', xp:175, counter:'collaborations', questions:[
+      { text:'What did you create together and what did each person contribute?', min:20 },
+      { text:'How did the collaboration come about and why this person?', min:20 },
+      { text:'Was there a moment of genuine creative friction — how did you navigate it?', min:20 },
+      { text:'What did your collaborator bring that you would not have brought alone?', min:20 },
+      { text:'Was there a moment where the collaboration produced something neither could have made alone?', min:20 },
+    ]},
+  ],
+};
+
+/* ═══════════════════════════════════════════
+   UNLOCK CATALOG
+═══════════════════════════════════════════ */
+const CATALOG = {
+  callsigns: [
+    // Level-based
+    { file:'callsign-the-lost.png',           name:'The Lost',              unlockKey:'lv-callsign-the-lost',          cond:'Level 1' },
+    { file:'callsign-wanderer.png',            name:'The Wanderer',          unlockKey:'lv-callsign-wanderer',          cond:'Level 3' },
+    { file:'callsign-apprentice.png',          name:'Apprentice',            unlockKey:'lv-callsign-apprentice',        cond:'Level 5' },
+    { file:'callsign-the-seeker.png',          name:'The Seeker',            unlockKey:'lv-callsign-the-seeker',        cond:'Level 7' },
+    { file:'callsign-adventurer.png',          name:'Adventurer',            unlockKey:'lv-callsign-adventurer',        cond:'Level 10' },
+    { file:'callsign-the-tested.png',          name:'The Tested',            unlockKey:'lv-callsign-the-tested',        cond:'Level 11' },
+    { file:'callsign-the-resolute.png',        name:'The Resolute',          unlockKey:'lv-callsign-the-resolute',      cond:'Level 14' },
+    { file:'callsign-veteran.png',             name:'Veteran',               unlockKey:'lv-callsign-veteran',           cond:'Level 15' },
+    { file:'callsign-the-capable.png',         name:'The Capable',           unlockKey:'lv-callsign-the-capable',       cond:'Level 17' },
+    { file:'callsign-champion.png',            name:'Champion',              unlockKey:'lv-callsign-champion',          cond:'Level 20' },
+    { file:'callsign-the-proven.png',          name:'The Proven',            unlockKey:'lv-callsign-the-proven',        cond:'Level 21' },
+    { file:'callsign-legend.png',              name:'Legend',                unlockKey:'lv-callsign-legend',            cond:'Level 25' },
+    { file:'callsign-the-relentless.png',      name:'The Relentless',        unlockKey:'lv-callsign-the-relentless',    cond:'Level 26' },
+    { file:'callsign-the-ascendant.png',       name:'The Ascendant',         unlockKey:'lv-callsign-the-ascendant',     cond:'Level 29' },
+    { file:'callsign-mythic.png',              name:'Mythic',                unlockKey:'lv-callsign-mythic',            cond:'Level 30' },
+    { file:'callsign-the-ancient.png',         name:'The Ancient',           unlockKey:'lv-callsign-the-ancient',       cond:'Level 31' },
+    { file:'callsign-the-transcendent.png',    name:'The Transcendent',      unlockKey:'lv-callsign-the-transcendent',  cond:'Level 34' },
+    { file:'callsign-ancient-2.png',           name:'Ancient',               unlockKey:'lv-callsign-ancient-2',         cond:'Level 35' },
+    { file:'callsign-the-eternal.png',         name:'The Eternal',           unlockKey:'lv-callsign-the-eternal',       cond:'Level 37' },
+    { file:'callsign-ascended.png',            name:'Ascended',              unlockKey:'lv-callsign-ascended',          cond:'Level 40' },
+    { file:'callsign-the-undying.png',         name:'The Undying',           unlockKey:'lv-callsign-the-undying',       cond:'Level 41' },
+    { file:'callsign-transcendent-2.png',      name:'Transcendent',          unlockKey:'lv-callsign-transcendent-2',    cond:'Level 45' },
+    { file:'callsign-the-limitless.png',       name:'The Limitless',         unlockKey:'lv-callsign-the-limitless',     cond:'Level 46' },
+    { file:'callsign-the-almost-immortal.png', name:'The Almost Immortal',   unlockKey:'lv-callsign-the-almost-immortal', cond:'Level 49' },
+    { file:'callsign-immortal.png',            name:'Immortal',              unlockKey:'lv-callsign-immortal',          cond:'Level 50' },
+    // Prestige
+    { file:'callsign-the-reborn.png',          name:'The Reborn',            unlockKey:'pr-callsign-the-reborn',        cond:'Prestige 1' },
+    { file:'callsign-the-renewed.png',         name:'The Renewed',           unlockKey:'pr-callsign-the-renewed',       cond:'Prestige 2' },
+    { file:'callsign-the-ascended-p.png',      name:'The Ascended',          unlockKey:'pr-callsign-the-ascended-p',    cond:'Prestige 3' },
+    { file:'callsign-the-eternal-p.png',       name:'The Eternal',           unlockKey:'pr-callsign-the-eternal-p',     cond:'Prestige 4' },
+    { file:'callsign-the-ancient-one.png',     name:'The Ancient One',       unlockKey:'pr-callsign-the-ancient-one',   cond:'Prestige 5' },
+    { file:'callsign-the-mythic-p.png',        name:'The Mythic',            unlockKey:'pr-callsign-the-mythic-p',      cond:'Prestige 6' },
+    { file:'callsign-the-legendary.png',       name:'The Legendary',         unlockKey:'pr-callsign-the-legendary',     cond:'Prestige 7' },
+    { file:'callsign-the-timeless.png',        name:'The Timeless',          unlockKey:'pr-callsign-the-timeless',      cond:'Prestige 8' },
+    { file:'callsign-the-transcendent-p.png',  name:'The Transcendent',      unlockKey:'pr-callsign-the-transcendent-p',cond:'Prestige 9' },
+    { file:'callsign-the-immortal-ultimate.png',name:'The Immortal',         unlockKey:'pr-callsign-the-immortal-ultimate',cond:'Prestige 10' },
+    // Strength specials
+    { file:'callsign-the-regular.png',         name:'The Regular',           unlockKey:'sp-the-regular',      cond:'Log gym 10 times' },
+    { file:'callsign-the-dedicated.png',       name:'The Dedicated',         unlockKey:'sp-the-dedicated',    cond:'Log gym 50 times' },
+    { file:'callsign-the-ironclad.png',        name:'The Ironclad',          unlockKey:'sp-the-ironclad',     cond:'Log gym 100 times' },
+    { file:'callsign-the-eternal-grind.png',   name:'The Eternal Grind',     unlockKey:'sp-the-eternal-grind',cond:'Log gym 365 times' },
+    { file:'callsign-the-pavement-pounder.png',name:'The Pavement Pounder',  unlockKey:'sp-the-pavement-pounder',cond:'Log run 10 times' },
+    { file:'callsign-the-endurance.png',       name:'The Endurance',         unlockKey:'sp-the-endurance',    cond:'Log run 50 times' },
+    { file:'callsign-the-distance.png',        name:'The Distance',          unlockKey:'sp-the-distance',     cond:'Log run 100 times' },
+    { file:'callsign-the-self-starter.png',    name:'The Self Starter',      unlockKey:'sp-the-self-starter', cond:'Log home workout 10 times' },
+    { file:'callsign-the-homegrown.png',       name:'The Homegrown',         unlockKey:'sp-the-homegrown',    cond:'Log home workout 50 times' },
+    { file:'callsign-the-self-made.png',       name:'The Self Made',         unlockKey:'sp-the-self-made',    cond:'Log home workout 100 times' },
+    { file:'callsign-the-athlete.png',         name:'The Athlete',           unlockKey:'sp-the-athlete',      cond:'Log sport 10 times' },
+    { file:'callsign-the-competitor.png',      name:'The Competitor',        unlockKey:'sp-the-competitor',   cond:'Log sport 50 times' },
+    { file:'callsign-the-sportsman.png',       name:'The Sportsman',         unlockKey:'sp-the-sportsman',    cond:'Log sport 100 times' },
+    { file:'callsign-the-breakthrough.png',    name:'The Breakthrough',      unlockKey:'sp-the-breakthrough', cond:'First personal best' },
+    { file:'callsign-the-improving.png',       name:'The Improving',         unlockKey:'sp-the-improving',    cond:'5 personal bests' },
+    { file:'callsign-the-unbeaten.png',        name:'The Unbeaten',          unlockKey:'sp-the-unbeaten',     cond:'10 personal bests' },
+    // Wisdom specials
+    { file:'callsign-the-reader.png',          name:'The Reader',            unlockKey:'sp-the-reader',       cond:'Finish 10 non-fiction books' },
+    { file:'callsign-the-scholar.png',         name:'The Scholar',           unlockKey:'sp-the-scholar',      cond:'Finish 25 non-fiction books' },
+    { file:'callsign-the-practitioner.png',    name:'The Practitioner',      unlockKey:'sp-the-practitioner', cond:'Apply knowledge 5 times' },
+    { file:'callsign-the-open-mind.png',       name:'The Open Mind',         unlockKey:'sp-the-open-mind',    cond:'Change mind 5 times' },
+    { file:'callsign-the-teacher.png',         name:'The Teacher',           unlockKey:'sp-the-teacher',      cond:'Teach someone 10 times' },
+    { file:'callsign-the-graduate.png',        name:'The Graduate',          unlockKey:'sp-the-graduate',     cond:'Complete any degree' },
+    { file:'callsign-the-linguist.png',        name:'The Linguist',          unlockKey:'sp-the-linguist',     cond:'30 consecutive language sessions' },
+    { file:'callsign-the-polyglot.png',        name:'The Polyglot',          unlockKey:'sp-the-polyglot',     cond:'100 consecutive language sessions' },
+    // Discipline specials
+    { file:'callsign-the-unplugged.png',       name:'The Unplugged',         unlockKey:'sp-the-unplugged',    cond:'Delete Instagram or TikTok' },
+    { file:'callsign-the-liberated.png',       name:'The Liberated',         unlockKey:'sp-the-liberated',    cond:'Delete all social media' },
+    { file:'callsign-the-clear-mind.png',      name:'The Clear Mind',        unlockKey:'sp-the-clear-mind',   cond:'30 days no social media' },
+    { file:'callsign-the-free.png',            name:'The Free',              unlockKey:'sp-the-free',         cond:'100 days no social media' },
+    { file:'callsign-the-sovereign.png',       name:'The Sovereign',         unlockKey:'sp-the-sovereign',    cond:'365 days no social media' },
+    { file:'callsign-the-focused.png',         name:'The Focused',           unlockKey:'sp-the-focused',      cond:'30 days under watch budget' },
+    { file:'callsign-the-unstoppable.png',     name:'The Unstoppable',       unlockKey:'sp-the-unstoppable',  cond:'Complete all goals 100 days' },
+    { file:'callsign-the-morning-guardian.png',name:'The Morning Guardian',  unlockKey:'sp-the-morning-guardian',cond:'30 consecutive no phone mornings' },
+    { file:'callsign-the-night-keeper.png',    name:'The Night Keeper',      unlockKey:'sp-the-night-keeper', cond:'30 consecutive digital sunsets' },
+    { file:'callsign-the-willful.png',         name:'The Willful',           unlockKey:'sp-the-willful',      cond:'Resist significant temptation 30 days' },
+    { file:'callsign-the-disciplined.png',     name:'The Disciplined',       unlockKey:'sp-the-disciplined',  cond:'Resist temptation 100 days' },
+    { file:'callsign-the-transformed.png',     name:'The Transformed',       unlockKey:'sp-the-transformed',  cond:'Avoid significant habit 90 days' },
+    { file:'callsign-the-reclaimed.png',       name:'The Reclaimed',         unlockKey:'sp-the-reclaimed',    cond:'Avoid time wasting habit 365 days' },
+    { file:'callsign-the-clear.png',           name:'The Clear',             unlockKey:'sp-the-clear',        cond:'30 days no alcohol' },
+    { file:'callsign-the-sober.png',           name:'The Sober',             unlockKey:'sp-the-sober',        cond:'90 days no alcohol' },
+    { file:'callsign-the-lucid.png',           name:'The Lucid',             unlockKey:'sp-the-lucid',        cond:'365 days no alcohol' },
+    { file:'callsign-the-nourished.png',       name:'The Nourished',         unlockKey:'sp-the-nourished',    cond:'30 days no junk food' },
+    { file:'callsign-the-clean.png',           name:'The Clean',             unlockKey:'sp-the-clean',        cond:'90 days no junk food' },
+    { file:'callsign-the-rested.png',          name:'The Rested',            unlockKey:'sp-the-rested',       cond:'30 days 8 hours sleep' },
+    { file:'callsign-the-restored.png',        name:'The Restored',          unlockKey:'sp-the-restored',     cond:'90 days 8 hours sleep' },
+    { file:'callsign-the-focused-mind.png',    name:'The Focused Mind',      unlockKey:'sp-the-focused-mind', cond:'50 deep work sessions' },
+    { file:'callsign-the-flow-state.png',      name:'The Flow State',        unlockKey:'sp-the-flow-state',   cond:'100 deep work sessions' },
+    { file:'callsign-the-craftsman.png',       name:'The Craftsman',         unlockKey:'sp-the-craftsman',    cond:'200 deep work sessions' },
+    { file:'callsign-the-starter.png',         name:'The Starter',           unlockKey:'sp-the-starter',      cond:'Finish 10 procrastinated tasks' },
+    { file:'callsign-the-still.png',           name:'The Still',             unlockKey:'sp-the-still',        cond:'Sit with boredom 10 times' },
+    { file:'callsign-the-present.png',         name:'The Present',           unlockKey:'sp-the-present',      cond:'Sit with boredom 30 times' },
+    { file:'callsign-the-sage.png',            name:'The Sage',              unlockKey:'sp-the-sage',         cond:'Sit with boredom 100 times' },
+    { file:'callsign-the-mindful.png',         name:'The Mindful',           unlockKey:'sp-the-mindful',      cond:'Meditate 30 times' },
+    { file:'callsign-the-centred.png',         name:'The Centred',           unlockKey:'sp-the-centred',      cond:'Meditate 100 times' },
+    { file:'callsign-the-carer.png',           name:'The Carer',             unlockKey:'sp-the-carer',        cond:'Walk dogs 100 times' },
+    // Charisma specials
+    { file:'callsign-the-kin.png',             name:'The Kin',               unlockKey:'sp-the-kin',          cond:'Call family 50 times' },
+    { file:'callsign-the-weaver.png',          name:'The Weaver',            unlockKey:'sp-the-weaver',       cond:'Reach out to 25 lost connections' },
+    { file:'callsign-the-magnetic.png',        name:'The Magnetic',          unlockKey:'sp-the-magnetic',     cond:'Make 10 new meaningful connections' },
+    { file:'callsign-the-social-architect.png',name:'The Social Architect',  unlockKey:'sp-the-social-architect',cond:'Make 25 new connections' },
+    { file:'callsign-the-human.png',           name:'The Human',             unlockKey:'sp-the-human',        cond:'25 stranger conversations' },
+    { file:'callsign-the-present-friend.png',  name:'The Present Friend',    unlockKey:'sp-the-present-friend',cond:'Quality time 50 times' },
+    { file:'callsign-the-courageous.png',      name:'The Courageous',        unlockKey:'sp-the-courageous',   cond:'10 difficult conversations' },
+    { file:'callsign-the-humble.png',          name:'The Humble',            unlockKey:'sp-the-humble',       cond:'Apologise 10 times' },
+    { file:'callsign-the-sovereign-self.png',  name:'The Sovereign Self',    unlockKey:'sp-the-sovereign-self',cond:'Say no 25 times' },
+    { file:'callsign-the-defender.png',        name:'The Defender',          unlockKey:'sp-the-defender',     cond:'Stand up 10 times' },
+    { file:'callsign-the-protector.png',       name:'The Protector',         unlockKey:'sp-the-protector',    cond:'Stand up for others 5 times' },
+    { file:'callsign-the-expansive.png',       name:'The Expansive',         unlockKey:'sp-the-expansive',    cond:'Attend 10 comfort zone events' },
+    { file:'callsign-the-generous.png',        name:'The Generous',          unlockKey:'sp-the-generous',     cond:'Give courageous compliment 10 times' },
+    { file:'callsign-the-humble-strength.png', name:'The Humble Strength',   unlockKey:'sp-the-humble-strength',cond:'Ask for help 10 times' },
+    { file:'callsign-the-host.png',            name:'The Host',              unlockKey:'sp-the-host',         cond:'Organise 5 social gatherings' },
+    { file:'callsign-the-gatherer.png',        name:'The Gatherer',          unlockKey:'sp-the-gatherer',     cond:'Organise 15 gatherings' },
+    { file:'callsign-the-anchor.png',          name:'The Anchor',            unlockKey:'sp-the-anchor',       cond:'Mentor someone 10 times' },
+    { file:'callsign-the-intimate.png',        name:'The Intimate',          unlockKey:'sp-the-intimate',     cond:'5 vulnerable partner conversations' },
+    { file:'callsign-the-romantic.png',        name:'The Romantic',          unlockKey:'sp-the-romantic',     cond:'10 intentional dates' },
+    { file:'callsign-the-loving.png',          name:'The Loving',            unlockKey:'sp-the-loving',       cond:'Express love 15 times' },
+    // Creativity specials
+    { file:'callsign-the-maker.png',           name:'The Maker',             unlockKey:'sp-the-maker',        cond:'50 creative project sessions' },
+    { file:'callsign-the-dedicated-creator.png',name:'The Dedicated Creator',unlockKey:'sp-the-dedicated-creator',cond:'100 creative project sessions' },
+    { file:'callsign-the-finisher.png',        name:'The Finisher',          unlockKey:'sp-the-finisher',     cond:'Finish 5 creative projects' },
+    { file:'callsign-the-artisan.png',         name:'The Artisan',           unlockKey:'sp-the-artisan',      cond:'Build or make 50 things' },
+    { file:'callsign-the-cook.png',            name:'The Cook',              unlockKey:'sp-the-cook',         cond:'Cook from scratch 30 times' },
+    { file:'callsign-the-chef.png',            name:'The Chef',              unlockKey:'sp-the-chef',         cond:'Cook from scratch 100 times' },
+    { file:'callsign-the-musician.png',        name:'The Musician',          unlockKey:'sp-the-musician',     cond:'Practice instrument 100 times' },
+    { file:'callsign-the-virtuoso.png',        name:'The Virtuoso',          unlockKey:'sp-the-virtuoso',     cond:'Practice 500 total sessions' },
+    { file:'callsign-the-performer.png',       name:'The Performer',         unlockKey:'sp-the-performer',    cond:'Practice and perform same week 10 times' },
+    { file:'callsign-the-stage.png',           name:'The Stage',             unlockKey:'sp-the-stage',        cond:'Perform music 50 times' },
+    { file:'callsign-the-speaker.png',         name:'The Speaker',           unlockKey:'sp-the-speaker',      cond:'Speak publicly 5 times' },
+    { file:'callsign-the-orator.png',          name:'The Orator',            unlockKey:'sp-the-orator',       cond:'Speak publicly 15 times' },
+    { file:'callsign-the-voice.png',           name:'The Voice',             unlockKey:'sp-the-voice',        cond:'First ever public speech' },
+    { file:'callsign-the-writer.png',          name:'The Writer',            unlockKey:'sp-the-writer',       cond:'Write creatively 50 times' },
+    { file:'callsign-the-storyteller.png',     name:'The Storyteller',       unlockKey:'sp-the-storyteller',  cond:'Write creatively 100 times' },
+    { file:'callsign-the-student.png',         name:'The Student',           unlockKey:'sp-the-student',      cond:'Take 10 creative classes' },
+    { file:'callsign-the-public-voice.png',    name:'The Public Voice',      unlockKey:'sp-the-public-voice', cond:'Publish creative work 15 times' },
+    { file:'callsign-the-contender.png',       name:'The Contender',         unlockKey:'sp-the-contender',    cond:'Enter 5 competitions' },
+    { file:'callsign-the-persistent.png',      name:'The Persistent',        unlockKey:'sp-the-persistent',   cond:'Enter competitions 15 times' },
+    { file:'callsign-the-collaborator.png',    name:'The Collaborator',      unlockKey:'sp-the-collaborator', cond:'Collaborate 10 times' },
+  ],
+  icons: [
+    { file:'icon-default.png',               name:'Starting Crest',          unlockKey:'lv-icon-default',        cond:'Level 1' },
+    { file:'icon-iron-mark.png',             name:'Iron Mark',               unlockKey:'lv-icon-iron-mark',      cond:'Level 4' },
+    { file:'icon-forest-seal.png',           name:'Forest Seal',             unlockKey:'lv-icon-forest-seal',    cond:'Level 5' },
+    { file:'icon-storm-sigil.png',           name:'Storm Sigil',             unlockKey:'lv-icon-storm-sigil',    cond:'Level 9' },
+    { file:'icon-dragon-eye.png',            name:'Dragon Eye',              unlockKey:'lv-icon-dragon-eye',     cond:'Level 10' },
+    { file:'icon-phoenix-rising.png',        name:'Phoenix Rising',          unlockKey:'lv-icon-phoenix-rising', cond:'Level 13' },
+    { file:'icon-celestial-compass.png',     name:'Celestial Compass',       unlockKey:'lv-icon-celestial-compass',cond:'Level 16' },
+    { file:'icon-rune-circle.png',           name:'Rune Circle',             unlockKey:'lv-icon-rune-circle',    cond:'Level 18' },
+    { file:'icon-gold-filigree.png',         name:'Gold Filigree',           unlockKey:'lv-icon-gold-filigree',  cond:'Level 19' },
+    { file:'icon-crown-of-thorns.png',       name:'Crown of Thorns',         unlockKey:'lv-icon-crown-of-thorns',cond:'Level 20' },
+    { file:'icon-solar-eclipse.png',         name:'Solar Eclipse',           unlockKey:'lv-icon-solar-eclipse',  cond:'Level 23' },
+    { file:'icon-dragon-scale.png',          name:'Dragon Scale',            unlockKey:'lv-icon-dragon-scale',   cond:'Level 24' },
+    { file:'icon-wolf-head.png',             name:'Wolf Head',               unlockKey:'lv-icon-wolf-head',      cond:'Level 25' },
+    { file:'icon-skull-and-stars.png',       name:'Skull and Stars',         unlockKey:'lv-icon-skull-and-stars',cond:'Level 27' },
+    { file:'icon-cosmic-eye.png',            name:'Cosmic Eye',              unlockKey:'lv-icon-cosmic-eye',     cond:'Level 30' },
+    { file:'icon-ancient-deity.png',         name:'Ancient Deity',           unlockKey:'lv-icon-ancient-deity',  cond:'Level 32' },
+    { file:'icon-void-sigil.png',            name:'Void Sigil',              unlockKey:'lv-icon-void-sigil',     cond:'Level 35' },
+    { file:'icon-astral-phoenix.png',        name:'Astral Phoenix',          unlockKey:'lv-icon-astral-phoenix', cond:'Level 38' },
+    { file:'icon-the-burning-throne.png',    name:'The Burning Throne',      unlockKey:'lv-icon-the-burning-throne',cond:'Level 40' },
+    { file:'icon-the-cosmic-crown.png',      name:'The Cosmic Crown',        unlockKey:'lv-icon-the-cosmic-crown',cond:'Level 43' },
+    { file:'icon-the-void-gate.png',         name:'The Void Gate',           unlockKey:'lv-icon-the-void-gate',  cond:'Level 45' },
+    { file:'icon-the-celestial-serpent.png', name:'The Celestial Serpent',   unlockKey:'lv-icon-the-celestial-serpent',cond:'Level 48' },
+    { file:'icon-the-immortal-mark.png',     name:'The Immortal Mark',       unlockKey:'lv-icon-the-immortal-mark',cond:'Level 50' },
+  ],
+  prestige: [
+    { file:'prestige-icon-1.png',  name:'Prestige I',    unlockKey:'pr-prestige-1',  cond:'First prestige' },
+    { file:'prestige-icon-2.png',  name:'Prestige II',   unlockKey:'pr-prestige-2',  cond:'Second prestige' },
+    { file:'prestige-icon-3.png',  name:'Prestige III',  unlockKey:'pr-prestige-3',  cond:'Third prestige' },
+    { file:'prestige-icon-4.png',  name:'Prestige IV',   unlockKey:'pr-prestige-4',  cond:'Fourth prestige' },
+    { file:'prestige-icon-5.png',  name:'Prestige V',    unlockKey:'pr-prestige-5',  cond:'Fifth prestige' },
+    { file:'prestige-icon-6.png',  name:'Prestige VI',   unlockKey:'pr-prestige-6',  cond:'Sixth prestige' },
+    { file:'prestige-icon-7.png',  name:'Prestige VII',  unlockKey:'pr-prestige-7',  cond:'Seventh prestige' },
+    { file:'prestige-icon-8.png',  name:'Prestige VIII', unlockKey:'pr-prestige-8',  cond:'Eighth prestige' },
+    { file:'prestige-icon-9.png',  name:'Prestige IX',   unlockKey:'pr-prestige-9',  cond:'Ninth prestige' },
+    { file:'prestige-icon-10.png', name:'Prestige X',    unlockKey:'pr-prestige-10', cond:'Tenth prestige' },
+  ],
+};
+
+// Map overall level → callsign/icon unlock keys
+const LEVEL_CALLSIGNS = [
+  [1,'lv-callsign-the-lost'],[3,'lv-callsign-wanderer'],[5,'lv-callsign-apprentice'],
+  [7,'lv-callsign-the-seeker'],[10,'lv-callsign-adventurer'],[11,'lv-callsign-the-tested'],
+  [14,'lv-callsign-the-resolute'],[15,'lv-callsign-veteran'],[17,'lv-callsign-the-capable'],
+  [20,'lv-callsign-champion'],[21,'lv-callsign-the-proven'],[25,'lv-callsign-legend'],
+  [26,'lv-callsign-the-relentless'],[29,'lv-callsign-the-ascendant'],[30,'lv-callsign-mythic'],
+  [31,'lv-callsign-the-ancient'],[34,'lv-callsign-the-transcendent'],[35,'lv-callsign-ancient-2'],
+  [37,'lv-callsign-the-eternal'],[40,'lv-callsign-ascended'],[41,'lv-callsign-the-undying'],
+  [45,'lv-callsign-transcendent-2'],[46,'lv-callsign-the-limitless'],
+  [49,'lv-callsign-the-almost-immortal'],[50,'lv-callsign-immortal'],
+];
+const LEVEL_ICONS = [
+  [1,'lv-icon-default'],[4,'lv-icon-iron-mark'],[5,'lv-icon-forest-seal'],
+  [9,'lv-icon-storm-sigil'],[10,'lv-icon-dragon-eye'],[13,'lv-icon-phoenix-rising'],
+  [16,'lv-icon-celestial-compass'],[18,'lv-icon-rune-circle'],[19,'lv-icon-gold-filigree'],
+  [20,'lv-icon-crown-of-thorns'],[23,'lv-icon-solar-eclipse'],[24,'lv-icon-dragon-scale'],
+  [25,'lv-icon-wolf-head'],[27,'lv-icon-skull-and-stars'],[30,'lv-icon-cosmic-eye'],
+  [32,'lv-icon-ancient-deity'],[35,'lv-icon-void-sigil'],[38,'lv-icon-astral-phoenix'],
+  [40,'lv-icon-the-burning-throne'],[43,'lv-icon-the-cosmic-crown'],
+  [45,'lv-icon-the-void-gate'],[48,'lv-icon-the-celestial-serpent'],
+  [50,'lv-icon-the-immortal-mark'],
+];
+const PRESTIGE_KEYS = [
+  [1,'pr-prestige-1'],[2,'pr-prestige-2'],[3,'pr-prestige-3'],[4,'pr-prestige-4'],
+  [5,'pr-prestige-5'],[6,'pr-prestige-6'],[7,'pr-prestige-7'],[8,'pr-prestige-8'],
+  [9,'pr-prestige-9'],[10,'pr-prestige-10'],
+];
+const PRESTIGE_CALLSIGNS = [
+  [1,'pr-callsign-the-reborn'],[2,'pr-callsign-the-renewed'],[3,'pr-callsign-the-ascended-p'],
+  [4,'pr-callsign-the-eternal-p'],[5,'pr-callsign-the-ancient-one'],[6,'pr-callsign-the-mythic-p'],
+  [7,'pr-callsign-the-legendary'],[8,'pr-callsign-the-timeless'],[9,'pr-callsign-the-transcendent-p'],
+  [10,'pr-callsign-the-immortal-ultimate'],
+];
+
+/* ═══════════════════════════════════════════
+   checkAllUnlocks
+═══════════════════════════════════════════ */
+function checkAllUnlocks() {
+  const u = getUnlocks();
+  const c = getCounters();
+  const ovl = overallLevel();
+  const newU = [];
+
+  function tryU(key, name, cond) {
+    if (!u[key]) { u[key] = true; newU.push({ key, name, cond }); }
+  }
+
+  // Level-based callsigns + icons
+  LEVEL_CALLSIGNS.forEach(([lv, key]) => { if (ovl >= lv) tryU(key, key, 'Level ' + lv); });
+  LEVEL_ICONS.forEach(([lv, key])     => { if (ovl >= lv) tryU(key, key, 'Level ' + lv); });
+
+  // Prestige-based
+  const prestige = load(K.prestige, 0);
+  PRESTIGE_KEYS.forEach(([p, key])       => { if (prestige >= p) tryU(key, key, 'Prestige ' + p); });
+  PRESTIGE_CALLSIGNS.forEach(([p, key])  => { if (prestige >= p) tryU(key, key, 'Prestige ' + p); });
+
+  // Counter-based specials
+  const t = (n, key, name, cond) => { if ((c[n]||0) >= key) tryU('sp-'+name, name, cond); };
+  t('gym-sessions',10,'the-regular','Log gym 10 times');
+  t('gym-sessions',50,'the-dedicated','Log gym 50 times');
+  t('gym-sessions',100,'the-ironclad','Log gym 100 times');
+  t('gym-sessions',365,'the-eternal-grind','Log gym 365 times');
+  t('run-sessions',10,'the-pavement-pounder','Log run 10 times');
+  t('run-sessions',50,'the-endurance','Log run 50 times');
+  t('run-sessions',100,'the-distance','Log run 100 times');
+  t('home-workout-sessions',10,'the-self-starter','Log home workout 10 times');
+  t('home-workout-sessions',50,'the-homegrown','Log home workout 50 times');
+  t('home-workout-sessions',100,'the-self-made','Log home workout 100 times');
+  t('sport-sessions',10,'the-athlete','Log sport 10 times');
+  t('sport-sessions',50,'the-competitor','Log sport 50 times');
+  t('sport-sessions',100,'the-sportsman','Log sport 100 times');
+  t('personal-bests',1,'the-breakthrough','First personal best');
+  t('personal-bests',5,'the-improving','5 personal bests');
+  t('personal-bests',10,'the-unbeaten','10 personal bests');
+  t('books-finished',10,'the-reader','Finish 10 non-fiction books');
+  t('books-finished',25,'the-scholar','Finish 25 non-fiction books');
+  t('knowledge-applied',5,'the-practitioner','Apply knowledge 5 times');
+  t('mind-changed',5,'the-open-mind','Change mind 5 times');
+  t('taught-count',10,'the-teacher','Teach someone 10 times');
+  t('degrees-completed',1,'the-graduate','Complete any degree');
+  t('language-sessions',30,'the-linguist','30 language sessions');
+  t('language-sessions',100,'the-polyglot','100 language sessions');
+  t('social-media-deleted',1,'the-unplugged','Delete social media app');
+  t('social-media-deleted',4,'the-liberated','Delete all social media');
+  t('no-social-days',30,'the-clear-mind','30 days no social media');
+  t('no-social-days',100,'the-free','100 days no social media');
+  t('no-social-days',365,'the-sovereign','365 days no social media');
+  t('deep-work-sessions',50,'the-focused-mind','50 deep work sessions');
+  t('deep-work-sessions',100,'the-flow-state','100 deep work sessions');
+  t('deep-work-sessions',200,'the-craftsman','200 deep work sessions');
+  t('boredom-sessions',10,'the-still','Sit with boredom 10 times');
+  t('boredom-sessions',30,'the-present','Sit with boredom 30 times');
+  t('boredom-sessions',100,'the-sage','Sit with boredom 100 times');
+  t('meditation-sessions',30,'the-mindful','Meditate 30 times');
+  t('meditation-sessions',100,'the-centred','Meditate 100 times');
+  t('procrastination-finished',10,'the-starter','Finish 10 procrastinated tasks');
+  t('family-calls',50,'the-kin','Call family 50 times');
+  t('lost-connections',25,'the-weaver','Reach out to 25 lost connections');
+  t('new-connections',10,'the-magnetic','Make 10 new meaningful connections');
+  t('new-connections',25,'the-social-architect','Make 25 new connections');
+  t('stranger-conversations',25,'the-human','25 stranger conversations');
+  t('friend-quality-time',50,'the-present-friend','Quality time 50 times');
+  t('difficult-conversations',10,'the-courageous','10 difficult conversations');
+  t('apologies',10,'the-humble','Apologise 10 times');
+  t('said-no-count',25,'the-sovereign-self','Say no 25 times');
+  t('stood-up-count',10,'the-defender','Stand up 10 times');
+  t('stood-up-for-others',5,'the-protector','Stand up for others 5 times');
+  t('comfort-zone-events',10,'the-expansive','Attend 10 comfort zone events');
+  t('courageous-compliments',10,'the-generous','Give courageous compliment 10 times');
+  t('asked-for-help',10,'the-humble-strength','Ask for help 10 times');
+  t('gatherings-organised',5,'the-host','Organise 5 social gatherings');
+  t('gatherings-organised',15,'the-gatherer','Organise 15 gatherings');
+  t('mentored-count',10,'the-anchor','Mentor someone 10 times');
+  t('vulnerable-partner-convos',5,'the-intimate','5 vulnerable partner conversations');
+  t('intentional-dates',10,'the-romantic','10 intentional dates');
+  t('expressed-love',15,'the-loving','Express love 15 times');
+  t('creative-sessions',50,'the-maker','50 creative project sessions');
+  t('creative-sessions',100,'the-dedicated-creator','100 creative project sessions');
+  t('projects-finished',5,'the-finisher','Finish 5 creative projects');
+  t('things-made',50,'the-artisan','Build or make 50 things');
+  t('cooked-from-scratch',30,'the-cook','Cook from scratch 30 times');
+  t('cooked-from-scratch',100,'the-chef','Cook from scratch 100 times');
+  t('instrument-sessions',100,'the-musician','Practice instrument 100 times');
+  t('instrument-sessions',500,'the-virtuoso','Practice 500 total sessions');
+  t('performances',10,'the-performer','Perform 10 times');
+  t('performances',50,'the-stage','Perform 50 times');
+  t('public-speeches',1,'the-voice','First ever public speech');
+  t('public-speeches',5,'the-speaker','Speak publicly 5 times');
+  t('public-speeches',15,'the-orator','Speak publicly 15 times');
+  t('creative-writing-sessions',50,'the-writer','Write creatively 50 times');
+  t('creative-writing-sessions',100,'the-storyteller','Write creatively 100 times');
+  t('creative-classes',10,'the-student','Take 10 creative classes');
+  t('published-count',15,'the-public-voice','Publish creative work 15 times');
+  t('competitions-entered',5,'the-contender','Enter 5 competitions');
+  t('competitions-entered',15,'the-persistent','Enter competitions 15 times');
+  t('collaborations',10,'the-collaborator','Collaborate 10 times');
+
+  if (newU.length) save(K.unlocks, u);
+  return newU;
+}
+
+/* ═══════════════════════════════════════════
+   EQUIPPED ASSETS
+═══════════════════════════════════════════ */
+function getEquippedCallsign() { return localStorage.getItem(K.callsign) || 'callsign-wanderer.png'; }
+function getEquippedIcon()     { return localStorage.getItem(K.icon)     || 'icon-default.png'; }
+function getEquippedPrestige() { return localStorage.getItem(K.prestige) || null; }
+
+function isUnlocked(item) {
+  return !!getUnlocks()[item.unlockKey];
+}
+
+/* ═══════════════════════════════════════════
+   CHARACTER SCREEN RENDER
+═══════════════════════════════════════════ */
+function renderCharacter() {
+  const lv = getLevels();
+  const xp = getXP();
+  const ovl = overallLevel();
+
+  // Callsign + icon + prestige
+  document.getElementById('char-callsign-img').src = getEquippedCallsign();
+  document.getElementById('char-icon-img').src     = getEquippedIcon();
+  const pImg = document.getElementById('char-prestige-img');
+  const ep = getEquippedPrestige();
+  if (ep && load(K.prestige, 0) > 0) {
+    pImg.src = ep;
+    pImg.style.display = 'inline-block';
+  } else {
+    pImg.style.display = 'none';
+  }
+
+  // Overall level
+  document.getElementById('char-level-num').textContent = 'LVL ' + ovl;
+
+  // Overall XP bar (avg of all stats)
+  const needed = xpForLevel(ovl);
+  const avgXP  = Math.round(STATS.reduce((s,k) => s + xp[k], 0) / STATS.length);
+  const pct    = Math.min(100, needed > 0 ? avgXP / needed * 100 : 0);
+  document.getElementById('char-xp-bar-fill').style.width = pct + '%';
+  document.getElementById('char-xp-label-right').textContent = avgXP + ' / ' + needed + ' XP';
+
+  // Stat rows
+  const panel = document.getElementById('char-stats-panel');
+  panel.innerHTML = '';
+  STATS.forEach(stat => {
+    const m      = STAT_META[stat];
+    const slv    = lv[stat] || 1;
+    const sxp    = xp[stat] || 0;
+    const sn     = xpForLevel(slv);
+    const sp     = Math.min(100, sn > 0 ? sxp / sn * 100 : 0);
+    const tier   = statTier(slv);
+    const row = document.createElement('div');
+    row.className = 'char-stat-row';
+    row.innerHTML = `
+      <div class="char-stat-icon-wrap" style="border-color:${m.color}">
+        <img class="char-stat-icon-img" src="stat-icon-${stat}-${tier}.png" alt="${m.name}">
+      </div>
+      <div class="char-stat-body">
+        <div class="char-stat-name-row">
+          <span class="char-stat-name" style="color:${m.color}">${m.name}</span>
+          <span class="char-stat-lvl"  style="color:${m.color}">LVL ${slv}</span>
+        </div>
+        <div class="char-stat-bar-track">
+          <div class="char-stat-bar-fill" style="width:${sp}%;background:${m.color}"></div>
+        </div>
+      </div>`;
+    panel.appendChild(row);
+  });
+}
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════ */
+function showLevelUpToast(statName, newLevel) {
+  const el = document.getElementById('notif-levelup');
+  document.getElementById('notif-levelup-sub').textContent = statName + ' → Level ' + newLevel;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 2500);
+}
+
+let _unlockQ = [], _unlockShowing = false;
+function queueUnlocks(items) {
+  _unlockQ.push(...items);
+  if (!_unlockShowing) showNextUnlock();
+}
+function showNextUnlock() {
+  if (!_unlockQ.length) { _unlockShowing = false; return; }
+  _unlockShowing = true;
+  const u = _unlockQ.shift();
+  // Find display name from catalog
+  let displayName = u.name || u.key;
+  let displayCond = u.cond || '';
+  for (const cat of Object.values(CATALOG)) {
+    const found = cat.find(i => i.unlockKey === u.key);
+    if (found) { displayName = found.name; displayCond = found.cond; break; }
+  }
+  document.getElementById('notif-unlock-name').textContent = displayName;
+  document.getElementById('notif-unlock-desc').textContent = displayCond;
+  const el = document.getElementById('notif-unlock');
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; setTimeout(showNextUnlock, 400); }, 3000);
+}
+
+/* ═══════════════════════════════════════════
+   BOTTOM NAVIGATION
+═══════════════════════════════════════════ */
+const TAB_SCREENS = {
+  character: 'screen-character',
+  log:       'screen-log',
+  vault:     'screen-vault',
+  codex:     'screen-codex',
+};
+
+let _activeTab = 'character';
+
+function switchTab(tab) {
+  _activeTab = tab;
+  // screens
+  Object.entries(TAB_SCREENS).forEach(([t, id]) => {
+    const el = document.getElementById(id);
+    el.classList.toggle('active', t === tab);
+  });
+  // nav tabs
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  if (tab === 'vault') renderVault(_vaultTab);
+}
+
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+/* ═══════════════════════════════════════════
+   VAULT
+═══════════════════════════════════════════ */
+let _vaultTab = 'callsigns';
+
+function renderVault(tab) {
+  _vaultTab = tab;
+  document.querySelectorAll('.vault-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.vaultTab === tab));
+
+  const items    = CATALOG[tab] || [];
+  const grid     = document.getElementById('vault-grid');
+  const catKey   = tab === 'callsigns' ? K.callsign : tab === 'icons' ? K.icon : K.prestige;
+  const equipped = localStorage.getItem(catKey) || (tab === 'callsigns' ? 'callsign-wanderer.png' : tab === 'icons' ? 'icon-default.png' : '');
+
+  grid.innerHTML = items.map(item => {
+    const unlocked   = isUnlocked(item);
+    const isEquipped = equipped === item.file;
+    return `<div class="vault-card${isEquipped ? ' equipped' : ''}${!unlocked ? ' locked' : ''}"
+                 data-file="${item.file}" data-cat="${catKey}" title="${!unlocked ? item.cond : ''}">
+      ${isEquipped ? '<span class="vault-equip-tick">✓</span>' : ''}
+      ${!unlocked  ? '<span class="vault-lock-badge">🔒</span>' : ''}
+      <img class="vault-card-img" src="${item.file}" alt="${item.name}"
+           onerror="this.style.opacity='0.2'">
+      <div class="vault-card-name">${item.name}</div>
+      ${!unlocked ? `<div class="vault-lock-info">${item.cond}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.vault-card:not(.locked)').forEach(card => {
+    card.addEventListener('click', () => {
+      localStorage.setItem(card.dataset.cat, card.dataset.file);
+      renderVault(tab);
+      renderCharacter();
+    });
+  });
+}
+
+document.querySelectorAll('.vault-tab').forEach(b => {
+  b.addEventListener('click', () => renderVault(b.dataset.vaultTab));
+});
+
+/* ═══════════════════════════════════════════
+   ACTIVITY LOGGING MODAL
+   State machine: stat → activity → questions → award
+═══════════════════════════════════════════ */
+let _logStat = null, _logAct = null;
+let _questIdx = 0, _questAnswers = [], _questTimer = null;
+const QUEST_TIME = 45;
+
+// Open log from nav tab
+function openLog() {
+  const body = document.getElementById('log-body');
+  body.innerHTML = '';
+  renderLogStep1(body);
+}
+
+// ── Step 1: Stat picker ──
+function renderLogStep1(body) {
+  body.innerHTML = `
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:14px;letter-spacing:0.06em;text-transform:uppercase">Which stat does this activity build?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${STATS.map(stat => {
+        const m = STAT_META[stat];
+        const lv = getLevels()[stat] || 1;
+        return `<div class="log-stat-card" data-stat="${stat}"
+             style="background:var(--card);border:1px solid ${m.color}33;border-radius:var(--radius);
+                    padding:14px 10px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent">
+          <img src="stat-icon-${stat}-${statTier(lv)}.png" style="width:44px;height:44px;object-fit:cover;border-radius:50%;margin-bottom:8px"
+               onerror="this.style.display='none'">
+          <div style="font-family:var(--font-display);font-size:0.9rem;color:${m.color}">${m.name}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">LVL ${lv}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  body.querySelectorAll('.log-stat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      _logStat = card.dataset.stat;
+      renderLogStep2(body);
+    });
+    card.addEventListener('mouseenter', () => {
+      const m = STAT_META[card.dataset.stat];
+      card.style.borderColor = m.color;
+      card.style.background  = m.color + '18';
+    });
+    card.addEventListener('mouseleave', () => {
+      const m = STAT_META[card.dataset.stat];
+      card.style.borderColor = m.color + '33';
+      card.style.background  = 'var(--card)';
+    });
+  });
+}
+
+// ── Step 2: Activity list ──
+function renderLogStep2(body) {
+  const acts = ACTIVITIES[_logStat] || [];
+  const m    = STAT_META[_logStat];
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button class="btn-outline" id="log-back-s1">← Back</button>
+      <div style="font-family:var(--font-display);font-size:1rem;color:${m.color}">${m.name}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${acts.map((a, i) => {
+        const locked = isLoggedToday(_logStat, a.name);
+        return `<div class="log-act-item${locked ? ' locked' : ''}" data-idx="${i}"
+               style="background:var(--card);border:1px solid ${locked ? 'var(--border)' : m.color + '33'};
+                      border-radius:var(--radius-sm);padding:12px 14px;cursor:${locked ? 'default' : 'pointer'};
+                      display:flex;justify-content:space-between;align-items:center;
+                      opacity:${locked ? '0.55' : '1'};-webkit-tap-highlight-color:transparent">
+          <div>
+            <div style="font-size:0.84rem;color:var(--text);margin-bottom:2px">${a.name}</div>
+            ${locked ? '<div style="font-size:0.68rem;color:var(--muted)">🔒 Already logged today</div>' : ''}
+          </div>
+          <span style="font-family:var(--font-display);font-size:0.9rem;color:${m.color};flex-shrink:0;margin-left:8px">+${a.xp}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  body.querySelector('#log-back-s1').addEventListener('click', () => renderLogStep1(body));
+  body.querySelectorAll('.log-act-item:not(.locked)').forEach(item => {
+    item.addEventListener('click', () => {
+      _logAct = acts[parseInt(item.dataset.idx)];
+      _questIdx = 0; _questAnswers = [];
+      renderLogQuestion(body);
+    });
+  });
+}
+
+// ── Step 3: Question flow ──
+function renderLogQuestion(body) {
+  clearQuestTimer();
+  const qs = _logAct.questions || [];
+  if (_questIdx >= qs.length) { finaliseQuestions(body); return; }
+  const q = qs[_questIdx];
+  const n = qs.length;
+  const m = STAT_META[_logStat];
+  const pips = qs.map((_, i) => {
+    let cls = 'q-pip';
+    if (i < _questIdx)   cls += (_questAnswers[i]?.skipped ? ' skipped' : ' done');
+    else if (i === _questIdx) cls += ' active';
+    return `<div class="${cls}" style="${i===_questIdx ? 'background:'+m.color : i<_questIdx ? 'opacity:0.6' : ''}"></div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <style>
+      .q-pip{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0}
+      .q-pip.done{background:var(--muted)}
+      .q-pip.skipped{background:var(--danger);opacity:0.6}
+      .q-wc{font-size:0.68rem;color:var(--muted);margin-top:4px}
+      .q-wc.met{color:var(--gold-dim)} .q-wc.over{color:var(--gold)} .q-wc.great{color:var(--gold)}
+    </style>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-outline" id="q-back" style="font-size:0.75rem;padding:5px 12px">← Back</button>
+        <span style="font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase">Q${_questIdx+1} of ${n}</span>
+      </div>
+      <button class="btn-outline" id="q-skip-act" style="font-size:0.75rem;padding:5px 12px;color:var(--danger)">Skip Activity</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px">${pips}</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+      <div style="font-size:0.7rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px">Question ${_questIdx+1}</div>
+      <div style="font-size:0.88rem;color:var(--text);line-height:1.55;margin-bottom:12px">${q.text}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Time remaining</span>
+        <span id="q-timer" style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold)">${QUEST_TIME}</span>
+      </div>
+      <textarea id="q-answer" placeholder="Write your answer…" rows="4"
+        style="width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius-sm);
+               color:var(--text);font-family:var(--font-body);font-size:0.84rem;padding:10px;
+               resize:none;outline:none;line-height:1.5"></textarea>
+      <div class="q-wc" id="q-wc">0 words — minimum ${q.min}</div>
+    </div>
+    <button class="btn-primary" id="q-next">${_questIdx < n-1 ? 'Next Question →' : 'Finish ✓'}</button>
+    <button class="btn-outline" id="q-skip-q" style="margin-top:8px;width:100%">Skip this question (0 XP)</button>`;
+
+  const ta   = body.querySelector('#q-answer');
+  const wcEl = body.querySelector('#q-wc');
+  ta.addEventListener('input', () => {
+    const w = ta.value.trim().split(/\s+/).filter(Boolean).length;
+    const met = w >= q.min, over = w >= Math.round(q.min*1.5), great = w >= q.min*2;
+    wcEl.textContent = w + ' words' + (great ? ' — great ✓' : over ? ' — good ✓' : met ? ' — minimum met ✓' : ' — minimum ' + q.min);
+    wcEl.className = 'q-wc' + (great ? ' great' : over ? ' over' : met ? ' met' : '');
+  });
+
+  body.querySelector('#q-back').addEventListener('click', () => {
+    clearQuestTimer();
+    if (_questIdx > 0) { _questIdx--; _questAnswers.pop(); renderLogQuestion(body); }
+    else renderLogStep2(body);
+  });
+  body.querySelector('#q-skip-act').addEventListener('click', () => {
+    clearQuestTimer(); openLog();
+  });
+  body.querySelector('#q-skip-q').addEventListener('click', () => {
+    clearQuestTimer();
+    _questAnswers.push({ text:'', words:0, skipped:true });
+    _questIdx++;
+    renderLogQuestion(body);
+  });
+  body.querySelector('#q-next').addEventListener('click', () => submitQ(body, false));
+
+  let timeLeft = QUEST_TIME;
+  _questTimer = setInterval(() => {
+    timeLeft--;
+    const el = document.getElementById('q-timer');
+    if (el) {
+      el.textContent = timeLeft;
+      if (timeLeft <= 10) el.style.color = 'var(--danger)';
+    }
+    if (timeLeft <= 0) submitQ(body, true);
+  }, 1000);
+
+  ta.focus();
+}
+
+function submitQ(body, timedOut) {
+  clearQuestTimer();
+  const q  = _logAct.questions[_questIdx];
+  const ta = document.getElementById('q-answer');
+  const text  = ta ? ta.value.trim() : '';
+  const words = text.split(/\s+/).filter(Boolean).length;
+  _questAnswers.push({ text, words, min: q.min, skipped: false, timedOut });
+  _questIdx++;
+  renderLogQuestion(body);
+}
+
+function clearQuestTimer() {
+  if (_questTimer) { clearInterval(_questTimer); _questTimer = null; }
+}
+
+// ── Finalise + XP award ──
+function finaliseQuestions(body) {
+  clearQuestTimer();
+  const a  = _logAct;
+  const qs = a.questions || [];
+  const n  = qs.length;
+  let total = 0;
+  const breakdown = [];
+  qs.forEach((q, i) => {
+    const ans = _questAnswers[i] || { words:0, skipped:true };
+    const perQ = a.xp / n;
+    let mult, lbl;
+    if (ans.skipped || ans.words === 0)           { mult = 0;    lbl = 'Skipped'; }
+    else if (ans.words >= q.min * 2)              { mult = 1.3;  lbl = 'Excellent'; }
+    else if (ans.words >= Math.round(q.min*1.5))  { mult = 1.15; lbl = 'Good'; }
+    else if (ans.words >= q.min)                  { mult = 1.0;  lbl = 'Met'; }
+    else                                           { mult = 0.7;  lbl = 'Low effort'; }
+    const earned = Math.round(perQ * mult);
+    total += earned;
+    breakdown.push({ qNum: i+1, earned, lbl });
+  });
+  awardXP(body, total, breakdown);
+}
+
+function awardXP(body, xp, breakdown) {
+  markLogged(_logStat, _logAct.name);
+  if (_logAct.counter) incCounter(_logAct.counter);
+  const result   = addXP(_logStat, xp);
+  const newUnlocks = checkAllUnlocks();
+  const m = STAT_META[_logStat];
+
+  const bkRows = breakdown.map(b =>
+    `<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:4px 0;border-bottom:1px solid var(--border-soft)">
+      <span style="color:var(--muted)">Q${b.qNum} — ${b.lbl}</span>
+      <span style="color:${m.color}">+${b.earned} XP</span>
+    </div>`).join('');
+
+  const unlockRows = newUnlocks.length ? `
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(201,168,76,0.06);border:1px solid var(--border);border-radius:var(--radius-sm)">
+      <div style="font-size:0.68rem;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px">🏆 Unlocked</div>
+      ${newUnlocks.map(u => {
+        let name = u.key, cond = u.cond;
+        for (const cat of Object.values(CATALOG)) {
+          const f = cat.find(i => i.unlockKey === u.key);
+          if (f) { name = f.name; cond = f.cond; break; }
+        }
+        return `<div style="font-size:0.78rem;color:var(--text);padding:3px 0">${name} <span style="color:var(--muted)">— ${cond}</span></div>`;
+      }).join('')}
+    </div>` : '';
+
+  const sn  = xpForLevel(result.lv);
+  const sp  = Math.min(100, sn > 0 ? result.xp / sn * 100 : 0);
+
+  body.innerHTML = `
+    <div style="text-align:center;padding:10px 0 18px">
+      <div style="font-size:2.8rem;margin-bottom:8px">⭐</div>
+      <div style="font-family:var(--font-display);font-size:2rem;color:var(--gold)">+${xp} XP</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-top:4px">${_logAct.name}</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px">
+      ${bkRows}
+      <div style="display:flex;justify-content:space-between;font-size:0.78rem;font-weight:600;padding:6px 0 0">
+        <span style="color:var(--text)">Total</span>
+        <span style="color:var(--gold)">+${xp} XP</span>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:5px">
+        <span style="font-family:var(--font-display);color:${m.color}">${m.name} LVL ${result.lv}</span>
+        <span>${result.xp} / ${sn} XP</span>
+      </div>
+      <div style="height:10px;background:var(--card);border:1px solid var(--border);border-radius:5px;overflow:hidden">
+        <div style="height:100%;width:${sp}%;background:${m.color};border-radius:5px;transition:width 0.6s ease"></div>
+      </div>
+    </div>
+    ${unlockRows}
+    <button class="btn-primary" id="award-done" style="margin-top:8px">Done ✓</button>`;
+
+  body.querySelector('#award-done').addEventListener('click', () => {
+    renderCharacter();
+    openLog();
+  });
+
+  if (newUnlocks.length) queueUnlocks(newUnlocks);
+  renderCharacter();
+}
+
+/* ═══════════════════════════════════════════
+   SPLASH + INIT
+═══════════════════════════════════════════ */
+function initApp() {
+  // Run unlock checks on startup to award any level-based unlocks from prior data
+  checkAllUnlocks();
+  renderCharacter();
+  // Ensure level 1 items are unlocked immediately
+  const u = getUnlocks();
+  if (!u['lv-callsign-the-lost']) {
+    u['lv-callsign-the-lost'] = true;
+    u['lv-icon-default']      = true;
+    u['lv-callsign-wanderer'] = true;
+    save(K.unlocks, u);
+  }
+
+  const splash = document.getElementById('screen-splash');
+  const nav    = document.getElementById('bottom-nav');
+  const wrap   = document.getElementById('screen-wrap');
+
+  if (sessionStorage.getItem('splash_shown')) {
+    // Skip splash this session
+    splash.style.display = 'none';
+    nav.classList.add('visible');
+    wrap.style.display = '';
+    switchTab('character');
+  } else {
+    sessionStorage.setItem('splash_shown', '1');
+    wrap.style.display  = 'none';
+    splash.classList.add('active');
+    setTimeout(() => {
+      splash.style.transition = 'opacity 0.5s ease';
+      splash.style.opacity    = '0';
+      setTimeout(() => {
+        splash.style.display = 'none';
+        wrap.style.display   = '';
+        nav.classList.add('visible');
+        switchTab('character');
+      }, 500);
+    }, 2500);
+  }
+}
+
+// Wire log tab to always re-open the stat picker
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  if (btn.dataset.tab === 'log') {
+    btn.addEventListener('click', openLog);
+  }
+});
+
+initApp();
 </script>
 </body>
 </html>
