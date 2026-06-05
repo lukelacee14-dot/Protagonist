@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Protagonist" />
   <title>Protagonist</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="protagonist-icon.png" />
@@ -13,58 +14,104 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
   <style>
+    /* ═══════════════════════════════════════════
+       DESIGN SYSTEM
+    ═══════════════════════════════════════════ */
     :root {
-      --bg: #0a0a0a;
-      --surface: #141414;
-      --surface-2: #1c1c1c;
-      --border: #2a2a2a;
-      --text: #e8e4dc;
-      --text-muted: #7a7670;
-      --gold: #c9a84c;
-      --gold-dim: #9c7f38;
-      --gold-bright: #e8c96a;
-      --danger: #c0392b;
-      --success: #4caf50;
-      --radius: 12px;
-      --radius-sm: 8px;
+      /* Backgrounds */
+      --bg:          #0a0a0a;
+      --card:        #111111;
+      --card-2:      #181818;
+
+      /* Borders */
+      --border:      #2a1f0e;
+      --border-soft: #1e1e1e;
+
+      /* Text */
+      --text:        #e8e4dc;
+      --muted:       #6b6760;
+
+      /* Accent */
+      --gold:        #c9a84c;
+      --gold-dim:    #9c7f38;
+      --gold-glow:   rgba(201,168,76,0.18);
+      --amber:       #5a3e1b;
+
+      /* Stat colours */
+      --strength:    #e05c5c;
+      --wisdom:      #6b9fff;
+      --discipline:  #a78bfa;
+      --charisma:    #f472b6;
+      --creativity:  #34d399;
+
+      /* Radii */
+      --radius:      14px;
+      --radius-sm:   8px;
+
+      /* Nav */
+      --nav-h:       64px;
+
+      /* Fonts */
       --font-display: 'Fredoka One', cursive;
-      --font-body: 'DM Sans', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
     }
 
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+      width: 100%; height: 100%;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-body);
+      font-weight: 400;
       -webkit-font-smoothing: antialiased;
+      overflow: hidden;
     }
 
-    /* ── Screens ── */
-    .screen {
+    /* ═══════════════════════════════════════════
+       APP SHELL
+    ═══════════════════════════════════════════ */
+    #app {
       position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Screen container ── */
+    #screen-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Generic screen ── */
+    .screen {
+      position: absolute;
       inset: 0;
       display: none;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
+    .screen.active { display: flex; }
 
-    .screen.active {
-      display: flex;
+    /* ── Fade-in animation ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
     }
+    .screen.active { animation: fadeUp 0.2s ease; }
 
-    /* ── Splash Screen ── */
+    /* ═══════════════════════════════════════════
+       SPLASH SCREEN
+    ═══════════════════════════════════════════ */
     #screen-splash {
       background: var(--bg);
+      overflow: hidden;
     }
 
     .splash-bg {
@@ -76,102 +123,947 @@
       background-repeat: no-repeat;
     }
 
-    .splash-overlay {
+    .splash-gradient {
       position: absolute;
       inset: 0;
       background: linear-gradient(
         to bottom,
-        transparent 40%,
-        rgba(10, 10, 10, 0.6) 65%,
-        rgba(10, 10, 10, 0.95) 100%
+        transparent 35%,
+        rgba(10,10,10,0.5) 60%,
+        rgba(10,10,10,0.97) 100%
       );
     }
 
     .splash-content {
       position: relative;
       z-index: 2;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-end;
-      height: 100%;
-      width: 100%;
-      padding-bottom: 60px;
+      padding-bottom: 72px;
+      gap: 12px;
     }
 
-    .btn-begin {
+    .splash-wordmark {
       font-family: var(--font-display);
-      font-size: 1.3rem;
+      font-size: 1.1rem;
+      color: var(--muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       BOTTOM NAVIGATION
+    ═══════════════════════════════════════════ */
+    #bottom-nav {
+      height: var(--nav-h);
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      /* hidden until splash done */
+      display: none;
+    }
+    #bottom-nav.visible { display: flex; }
+
+    .nav-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 8px 0 10px;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s;
+    }
+    .nav-tab.active { color: var(--gold); }
+    .nav-tab:active { opacity: 0.7; }
+
+    .nav-icon {
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .nav-label {
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* active tab indicator pip */
+    .nav-tab.active .nav-icon::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--gold);
+      border-radius: 50%;
+      margin: 3px auto 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       CHARACTER SCREEN
+    ═══════════════════════════════════════════ */
+    #screen-character {
+      overflow: hidden; /* full-bleed bg, internal scroll */
+    }
+
+    /* full-screen splash background */
+    .char-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('protagonist-splash.png');
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      z-index: 0;
+    }
+
+    .char-bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(10,10,10,0.55) 0%,
+        rgba(10,10,10,0.82) 45%,
+        rgba(10,10,10,0.97) 100%
+      );
+      z-index: 1;
+    }
+
+    /* scrollable content sits above bg */
+    .char-scroll {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Callsign banner ── */
+    .char-callsign-wrap {
+      width: 207px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .char-callsign-img {
+      width: 207px;
+      height: 70px;
+      object-fit: contain;
+      object-position: center;
+    }
+
+    /* ── Character icon ── */
+    .char-icon-wrap {
+      width: 152px;
+      height: 152px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 14px;
+      box-shadow: 0 0 24px rgba(201,168,76,0.12);
+    }
+
+    .char-icon-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Level row ── */
+    .char-level-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .char-level-num {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .char-prestige-img {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      display: none; /* shown when prestige > 0 */
+    }
+
+    /* ── Overall XP bar ── */
+    .char-xp-wrap {
+      width: 100%;
+      max-width: 340px;
+      margin-bottom: 20px;
+    }
+
+    .char-xp-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    .char-xp-bar-track {
+      width: 100%;
+      height: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Castle Crashers segmented XP bar */
+    .char-xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+      border-radius: 6px;
+      transition: width 0.6s ease;
+      position: relative;
+    }
+
+    /* segment notches */
+    .char-xp-bar-track::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent calc(10% - 1px),
+        rgba(0,0,0,0.35) calc(10% - 1px),
+        rgba(0,0,0,0.35) 10%
+      );
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    /* ── Stats panel ── */
+    .char-stats-panel {
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .char-stat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(17,17,17,0.82);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .char-stat-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--card-2);
+    }
+
+    .char-stat-icon-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .char-stat-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .char-stat-name-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .char-stat-name {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      letter-spacing: 0.02em;
+    }
+
+    .char-stat-lvl {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .char-stat-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .char-stat-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* segmented notches on stat bars */
+    .char-stat-bar-track::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent calc(20% - 1px),
+        rgba(0,0,0,0.3) calc(20% - 1px),
+        rgba(0,0,0,0.3) 20%
+      );
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       LOG SCREEN  (placeholder)
+    ═══════════════════════════════════════════ */
+    #screen-log {
+      background: var(--bg);
+    }
+
+    .screen-header {
+      padding: 52px 20px 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .screen-title {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--gold);
+      letter-spacing: 0.01em;
+    }
+
+    .screen-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ═══════════════════════════════════════════
+       VAULT SCREEN  (placeholder)
+    ═══════════════════════════════════════════ */
+    #screen-vault {
+      background: var(--bg);
+    }
+
+    /* ── Vault tab bar ── */
+    .vault-tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-soft);
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .vault-tab {
+      flex: 1;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 12px 0;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .vault-tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* ── Vault grid ── */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .vault-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px 10px;
+      gap: 8px;
+      position: relative;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s;
+    }
+
+    .vault-card.equipped {
+      border-color: var(--gold);
+    }
+
+    .vault-card.locked {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .vault-card-img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .vault-card-name {
+      font-size: 0.72rem;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .vault-lock-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 0.75rem;
+    }
+
+    .vault-equip-tick {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 0.75rem;
+      color: var(--gold);
+    }
+
+    /* ── Vault lock tooltip ── */
+    .vault-lock-info {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       CODEX SCREEN
+    ═══════════════════════════════════════════ */
+    #screen-codex {
+      background: var(--bg);
+    }
+
+    .codex-body {
+      padding: 20px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .codex-section {
+      margin-bottom: 10px;
+    }
+
+    .codex-section-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--gold);
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .codex-text {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .codex-text strong {
+      color: var(--text);
+    }
+
+    .codex-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       SHARED COMPONENTS
+    ═══════════════════════════════════════════ */
+
+    /* Gold button */
+    .btn-gold {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
       color: var(--gold);
       background: transparent;
       border: 2px solid var(--gold);
       border-radius: var(--radius);
-      padding: 14px 48px;
+      padding: 13px 44px;
       cursor: pointer;
       letter-spacing: 0.04em;
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-      box-shadow: 0 0 16px rgba(201, 168, 76, 0.2);
+      box-shadow: 0 0 18px var(--gold-glow);
+      transition: background 0.18s, box-shadow 0.18s;
       -webkit-tap-highlight-color: transparent;
     }
-
-    .btn-begin:active {
-      background: rgba(201, 168, 76, 0.15);
-      box-shadow: 0 0 28px rgba(201, 168, 76, 0.45);
+    .btn-gold:active {
+      background: var(--gold-glow);
+      box-shadow: 0 0 32px rgba(201,168,76,0.4);
     }
 
-    /* ── Home Screen (placeholder) ── */
-    #screen-home {
-      background: var(--bg);
-      padding: 32px 24px;
+    /* Hollow secondary button */
+    .btn-outline {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 20px;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s, border-color 0.15s;
     }
+    .btn-outline:active { color: var(--text); border-color: var(--gold-dim); }
 
-    .home-title {
+    /* Log activity primary button */
+    .btn-primary {
+      width: 100%;
       font-family: var(--font-display);
-      font-size: 2rem;
-      color: var(--gold);
-      margin-bottom: 8px;
+      font-size: 1.05rem;
+      color: var(--bg);
+      background: var(--gold);
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:active { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 22px; height: 22px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
     }
 
-    .home-sub {
-      color: var(--text-muted);
-      font-size: 0.9rem;
+    /* ═══════════════════════════════════════════
+       UNLOCK / LEVEL-UP NOTIFICATIONS
+    ═══════════════════════════════════════════ */
+    #notif-levelup {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      text-align: center;
+      z-index: 9999;
+      display: none;
+      min-width: 200px;
+      box-shadow: 0 0 24px var(--gold-glow);
     }
+    #notif-levelup .notif-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      color: var(--gold);
+    }
+    #notif-levelup .notif-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    #notif-unlock {
+      position: fixed;
+      bottom: calc(var(--nav-h) + 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--gold-dim);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      z-index: 9999;
+      display: none;
+      min-width: 220px;
+      max-width: 310px;
+      box-shadow: 0 0 20px var(--gold-glow);
+    }
+    .notif-unlock-inner {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .notif-unlock-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .notif-unlock-name {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      color: var(--gold);
+    }
+    .notif-unlock-desc {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
   </style>
 </head>
 <body>
+<div id="app">
 
-  <!-- Splash Screen -->
+  <!-- ═══════════════════════════════════════
+       SPLASH SCREEN
+  ════════════════════════════════════════ -->
   <div id="screen-splash" class="screen active">
     <div class="splash-bg"></div>
-    <div class="splash-overlay"></div>
+    <div class="splash-gradient"></div>
     <div class="splash-content">
-      <button class="btn-begin" id="btn-begin">Begin Your Journey</button>
+      <span class="splash-wordmark">Protagonist</span>
     </div>
   </div>
 
-  <!-- Home Screen -->
-  <div id="screen-home" class="screen">
-    <p class="home-title">Welcome, Protagonist.</p>
-    <p class="home-sub">Your adventure begins here.</p>
+  <!-- ═══════════════════════════════════════
+       SCREEN WRAP (tab content)
+  ════════════════════════════════════════ -->
+  <div id="screen-wrap">
+
+    <!-- ── CHARACTER SCREEN ── -->
+    <div id="screen-character" class="screen">
+      <div class="char-bg"></div>
+      <div class="char-bg-overlay"></div>
+      <div class="char-scroll">
+
+        <!-- Callsign banner -->
+        <div class="char-callsign-wrap">
+          <img id="char-callsign-img" class="char-callsign-img"
+               src="callsign-wanderer.png" alt="Callsign" />
+        </div>
+
+        <!-- Character icon -->
+        <div class="char-icon-wrap">
+          <img id="char-icon-img" class="char-icon-img"
+               src="icon-default.png" alt="Character icon" />
+        </div>
+
+        <!-- Level + prestige icon -->
+        <div class="char-level-row">
+          <div class="char-level-num" id="char-level-num">LVL 1</div>
+          <img id="char-prestige-img" class="char-prestige-img"
+               src="prestige-icon-1.png" alt="Prestige" />
+        </div>
+
+        <!-- Overall XP bar -->
+        <div class="char-xp-wrap">
+          <div class="char-xp-label-row">
+            <span id="char-xp-label-left">Overall Progress</span>
+            <span id="char-xp-label-right">0 / 500 XP</span>
+          </div>
+          <div class="char-xp-bar-track">
+            <div class="char-xp-bar-fill" id="char-xp-bar-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Stat rows -->
+        <div class="char-stats-panel" id="char-stats-panel">
+
+          <!-- Strength -->
+          <div class="char-stat-row">
+            <div class="char-stat-icon-wrap" style="border-color: var(--strength)">
+              <img class="char-stat-icon-img"
+                   src="stat-icon-strength-1.png" alt="Strength" />
+            </div>
+            <div class="char-stat-body">
+              <div class="char-stat-name-row">
+                <span class="char-stat-name" style="color: var(--strength)">Strength</span>
+                <span class="char-stat-lvl"  style="color: var(--strength)">LVL 1</span>
+              </div>
+              <div class="char-stat-bar-track">
+                <div class="char-stat-bar-fill"
+                     style="width:0%; background: var(--strength)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wisdom -->
+          <div class="char-stat-row">
+            <div class="char-stat-icon-wrap" style="border-color: var(--wisdom)">
+              <img class="char-stat-icon-img"
+                   src="stat-icon-wisdom-1.png" alt="Wisdom" />
+            </div>
+            <div class="char-stat-body">
+              <div class="char-stat-name-row">
+                <span class="char-stat-name" style="color: var(--wisdom)">Wisdom</span>
+                <span class="char-stat-lvl"  style="color: var(--wisdom)">LVL 1</span>
+              </div>
+              <div class="char-stat-bar-track">
+                <div class="char-stat-bar-fill"
+                     style="width:0%; background: var(--wisdom)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discipline -->
+          <div class="char-stat-row">
+            <div class="char-stat-icon-wrap" style="border-color: var(--discipline)">
+              <img class="char-stat-icon-img"
+                   src="stat-icon-discipline-1.png" alt="Discipline" />
+            </div>
+            <div class="char-stat-body">
+              <div class="char-stat-name-row">
+                <span class="char-stat-name" style="color: var(--discipline)">Discipline</span>
+                <span class="char-stat-lvl"  style="color: var(--discipline)">LVL 1</span>
+              </div>
+              <div class="char-stat-bar-track">
+                <div class="char-stat-bar-fill"
+                     style="width:0%; background: var(--discipline)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charisma -->
+          <div class="char-stat-row">
+            <div class="char-stat-icon-wrap" style="border-color: var(--charisma)">
+              <img class="char-stat-icon-img"
+                   src="stat-icon-charisma-1.png" alt="Charisma" />
+            </div>
+            <div class="char-stat-body">
+              <div class="char-stat-name-row">
+                <span class="char-stat-name" style="color: var(--charisma)">Charisma</span>
+                <span class="char-stat-lvl"  style="color: var(--charisma)">LVL 1</span>
+              </div>
+              <div class="char-stat-bar-track">
+                <div class="char-stat-bar-fill"
+                     style="width:0%; background: var(--charisma)"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Creativity -->
+          <div class="char-stat-row">
+            <div class="char-stat-icon-wrap" style="border-color: var(--creativity)">
+              <img class="char-stat-icon-img"
+                   src="stat-icon-creativity-1.png" alt="Creativity" />
+            </div>
+            <div class="char-stat-body">
+              <div class="char-stat-name-row">
+                <span class="char-stat-name" style="color: var(--creativity)">Creativity</span>
+                <span class="char-stat-lvl"  style="color: var(--creativity)">LVL 1</span>
+              </div>
+              <div class="char-stat-bar-track">
+                <div class="char-stat-bar-fill"
+                     style="width:0%; background: var(--creativity)"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /char-stats-panel -->
+
+      </div><!-- /char-scroll -->
+    </div><!-- /screen-character -->
+
+    <!-- ── LOG SCREEN ── -->
+    <div id="screen-log" class="screen">
+      <div class="screen-header">
+        <div class="screen-title">Log Activity</div>
+        <div class="screen-sub">What did you do today?</div>
+      </div>
+      <!-- Step content injected by JS -->
+      <div id="log-body" style="padding: 20px 16px; flex: 1;"></div>
+    </div>
+
+    <!-- ── VAULT SCREEN ── -->
+    <div id="screen-vault" class="screen">
+      <div class="screen-header">
+        <div class="screen-title">The Vault</div>
+        <div class="screen-sub">Your earned cosmetics</div>
+      </div>
+      <div class="vault-tab-bar">
+        <button class="vault-tab active" data-vault-tab="callsigns">Callsigns</button>
+        <button class="vault-tab"        data-vault-tab="emblems">Icons</button>
+        <button class="vault-tab"        data-vault-tab="prestige">Prestige</button>
+      </div>
+      <div id="vault-grid-wrap" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+        <div class="vault-grid" id="vault-grid"></div>
+      </div>
+    </div>
+
+    <!-- ── CODEX SCREEN ── -->
+    <div id="screen-codex" class="screen">
+      <div class="screen-header">
+        <div class="screen-title">The Codex</div>
+        <div class="screen-sub">Rules &amp; how it works</div>
+      </div>
+      <div class="codex-body">
+
+        <div class="codex-section">
+          <div class="codex-section-title">How XP Works</div>
+          <p class="codex-text">Log real life activities to earn XP across your five stats — Strength, Wisdom, Discipline, Charisma and Creativity. Every activity requires you to answer questions proving you actually did it. Your answers are scored on depth and effort — the more honestly and thoroughly you reflect, the more XP you earn.</p>
+        </div>
+
+        <hr class="codex-divider">
+
+        <div class="codex-section">
+          <div class="codex-section-title">XP Scoring</div>
+          <p class="codex-text">
+            <strong>Skipped question</strong> — 0% XP for that question.<br>
+            <strong>Low effort</strong> (under minimum words) — 70% XP.<br>
+            <strong>Minimum met</strong> — 100% XP.<br>
+            <strong>Good</strong> (1.5× min words) — 115% XP.<br>
+            <strong>Excellent</strong> (2× min words) — 130% XP.<br><br>
+            Each question carries equal weight. Final XP is the sum across all questions.
+          </p>
+        </div>
+
+        <hr class="codex-divider">
+
+        <div class="codex-section">
+          <div class="codex-section-title">The Five Stats</div>
+          <p class="codex-text">
+            <strong style="color: var(--strength)">Strength</strong> — physical activity, exercise, sport and personal bests.<br>
+            <strong style="color: var(--wisdom)">Wisdom</strong> — reading, learning, studying, languages and applying knowledge.<br>
+            <strong style="color: var(--discipline)">Discipline</strong> — digital habits, resisting temptation, sleep, deep work and mindfulness.<br>
+            <strong style="color: var(--charisma)">Charisma</strong> — relationships, vulnerability, courage in social situations and connection.<br>
+            <strong style="color: var(--creativity)">Creativity</strong> — creative projects, making things, music, writing and performance.
+          </p>
+        </div>
+
+        <hr class="codex-divider">
+
+        <div class="codex-section">
+          <div class="codex-section-title">Levelling Up</div>
+          <p class="codex-text">Your overall character level is the floor average of all five stats. Level up individual stats by logging activities in that domain. Reach Level 50 in your overall level to prestige and start again with a 1.25× XP multiplier.</p>
+        </div>
+
+        <hr class="codex-divider">
+
+        <div class="codex-section">
+          <div class="codex-section-title">Unlocks</div>
+          <p class="codex-text">Every level milestone, streak and special achievement unlocks cosmetic rewards — callsigns, icons and prestige badges. Visit The Vault to equip what you have earned. Tap locked items to see what challenge unlocks them.</p>
+        </div>
+
+        <hr class="codex-divider">
+
+        <div class="codex-section">
+          <div class="codex-section-title">The Honour Code</div>
+          <p class="codex-text">One log per activity per day. Your answers must be genuine — this system only works if you are honest with yourself. The XP means nothing if the life behind it is not real. Every point you earn is a record of something you actually did.</p>
+        </div>
+
+      </div><!-- /codex-body -->
+    </div><!-- /screen-codex -->
+
+  </div><!-- /screen-wrap -->
+
+  <!-- ═══════════════════════════════════════
+       BOTTOM NAVIGATION
+  ════════════════════════════════════════ -->
+  <nav id="bottom-nav">
+    <button class="nav-tab active" data-tab="character">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">Character</span>
+    </button>
+    <button class="nav-tab" data-tab="log">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">Log</span>
+    </button>
+    <button class="nav-tab" data-tab="vault">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label">Vault</span>
+    </button>
+    <button class="nav-tab" data-tab="codex">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">Codex</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       NOTIFICATIONS
+  ════════════════════════════════════════ -->
+  <div id="notif-levelup">
+    <div class="notif-title">⬆ LEVEL UP!</div>
+    <div class="notif-sub" id="notif-levelup-sub"></div>
   </div>
 
-  <script>
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      });
-    }
+  <div id="notif-unlock">
+    <div class="notif-unlock-inner">
+      <span class="notif-unlock-icon">🏆</span>
+      <div>
+        <div class="notif-unlock-name" id="notif-unlock-name"></div>
+        <div class="notif-unlock-desc" id="notif-unlock-desc"></div>
+      </div>
+    </div>
+  </div>
 
-    // Screen navigation
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
+</div><!-- /app -->
 
-    document.getElementById('btn-begin').addEventListener('click', () => {
-      showScreen('screen-home');
+<!-- JS will be added in Step 2 -->
+<script>
+  // Service worker registration (works now, JS logic added in later steps)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
-  </script>
+  }
+</script>
 </body>
 </html>
