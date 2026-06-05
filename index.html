@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -83,9 +83,11 @@
 
     /* ── Screen container ── */
     #screen-wrap {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: var(--nav-h); /* leave room for fixed nav */
     }
 
     /* ── Generic screen ── */
@@ -134,39 +136,22 @@
       );
     }
 
-    .splash-content {
-      position: relative;
-      z-index: 2;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      padding-bottom: 72px;
-      gap: 12px;
-    }
-
-    .splash-wordmark {
-      font-family: var(--font-display);
-      font-size: 1.1rem;
-      color: var(--muted);
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
 
     /* ═══════════════════════════════════════════
        BOTTOM NAVIGATION
     ═══════════════════════════════════════════ */
     #bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
       height: var(--nav-h);
       background: var(--card);
       border-top: 1px solid var(--border);
-      display: flex;
+      display: none;
       align-items: stretch;
       flex-shrink: 0;
-      /* hidden until splash done */
-      display: none;
+      z-index: 100;
     }
     #bottom-nav.visible { display: flex; }
 
@@ -778,9 +763,6 @@
   <div id="screen-splash" class="screen active">
     <div class="splash-bg"></div>
     <div class="splash-gradient"></div>
-    <div class="splash-content">
-      <span class="splash-wordmark">Protagonist</span>
-    </div>
   </div>
 
   <!-- ═══════════════════════════════════════
@@ -2269,7 +2251,7 @@ function renderLogQuestion(body) {
       </div>
       <textarea id="q-answer" placeholder="Write your answer…" rows="4"
         style="width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:var(--radius-sm);
-               color:var(--text);font-family:var(--font-body);font-size:0.84rem;padding:10px;
+               color:var(--text);font-family:var(--font-body);font-size:16px;padding:10px;
                resize:none;outline:none;line-height:1.5"></textarea>
       <div class="q-wc" id="q-wc">0 words — minimum ${q.min}</div>
     </div>
