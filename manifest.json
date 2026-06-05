@@ -1,0 +1,22 @@
+{
+  "name": "Protagonist",
+  "short_name": "Protagonist",
+  "description": "Your character. Your journey.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "protagonist-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "protagonist-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
