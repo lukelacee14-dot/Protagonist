@@ -112,8 +112,18 @@
        SPLASH SCREEN
     ═══════════════════════════════════════════ */
     #screen-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
       background: var(--bg);
       overflow: hidden;
+      display: block;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    #screen-splash.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .splash-bg {
@@ -760,7 +770,7 @@
   <!-- ═══════════════════════════════════════
        SPLASH SCREEN
   ════════════════════════════════════════ -->
-  <div id="screen-splash" class="screen active">
+  <div id="screen-splash">
     <div class="splash-bg"></div>
     <div class="splash-gradient"></div>
   </div>
@@ -2403,10 +2413,7 @@ function awardXP(body, xp, breakdown) {
    SPLASH + INIT
 ═══════════════════════════════════════════ */
 function initApp() {
-  // Run unlock checks on startup to award any level-based unlocks from prior data
-  checkAllUnlocks();
-  renderCharacter();
-  // Ensure level 1 items are unlocked immediately
+  // Ensure level 1 items are unlocked on first run
   const u = getUnlocks();
   if (!u['lv-callsign-the-lost']) {
     u['lv-callsign-the-lost'] = true;
@@ -2415,31 +2422,21 @@ function initApp() {
     save(K.unlocks, u);
   }
 
-  const splash = document.getElementById('screen-splash');
-  const nav    = document.getElementById('bottom-nav');
-  const wrap   = document.getElementById('screen-wrap');
+  // Run unlock checks and render the character screen immediately
+  // (it sits behind the splash overlay until the splash clears)
+  checkAllUnlocks();
+  switchTab('character');
+  renderCharacter();
+  document.getElementById('bottom-nav').classList.add('visible');
 
-  if (sessionStorage.getItem('splash_shown')) {
-    // Skip splash this session
-    splash.style.display = 'none';
-    nav.classList.add('visible');
-    wrap.style.display = '';
-    switchTab('character');
-  } else {
-    sessionStorage.setItem('splash_shown', '1');
-    wrap.style.display  = 'none';
-    splash.classList.add('active');
+  // Splash is a fixed z-index:9999 overlay — just fade it out after 2.5s
+  const splash = document.getElementById('screen-splash');
+  setTimeout(() => {
+    splash.classList.add('hidden');   // triggers CSS opacity:0 transition
     setTimeout(() => {
-      splash.style.transition = 'opacity 0.5s ease';
-      splash.style.opacity    = '0';
-      setTimeout(() => {
-        splash.style.display = 'none';
-        wrap.style.display   = '';
-        nav.classList.add('visible');
-        switchTab('character');
-      }, 500);
-    }, 2500);
-  }
+      splash.style.display = 'none'; // remove from paint tree once faded
+    }, 520); // slightly longer than the 0.5s CSS transition
+  }, 2500);
 }
 
 // Wire log tab to always re-open the stat picker
