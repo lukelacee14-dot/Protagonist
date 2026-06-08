@@ -209,6 +209,192 @@
     }
 
     /* ═══════════════════════════════════════════
+       CLOSEST CHALLENGES PULL-OUT
+    ═══════════════════════════════════════════ */
+    #challenges-tab {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 200;
+      width: 22px;
+      height: 64px;
+      background: #c9a84c;
+      border-radius: 0 4px 4px 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.5);
+      transition: background 0.15s;
+    }
+    #challenges-tab.visible { display: flex; }
+    #challenges-tab:active { background: #e8c060; }
+
+    #challenges-tab-arrow {
+      font-size: 0.7rem;
+      color: #0a0810;
+      transition: transform 0.3s ease;
+      line-height: 1;
+    }
+    #challenges-tab-arrow.open { transform: rotate(180deg); }
+
+    #challenges-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 198;
+      background: rgba(0,0,0,0);
+      pointer-events: none;
+      transition: background 0.3s ease;
+    }
+    #challenges-overlay.open {
+      background: rgba(0,0,0,0.45);
+      pointer-events: auto;
+    }
+
+    #challenges-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: var(--nav-h);
+      width: 75%;
+      max-width: 320px;
+      background: #111111;
+      border-right: 1px solid #c9a84c;
+      z-index: 199;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #challenges-panel.open { transform: translateX(0); }
+
+    .challenges-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 14px 12px;
+      border-bottom: 1px solid rgba(201,168,76,0.25);
+      flex-shrink: 0;
+    }
+
+    .challenges-panel-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1rem;
+      color: #c9a84c;
+      letter-spacing: 0.06em;
+    }
+
+    .challenges-close-btn {
+      background: none;
+      border: none;
+      color: #c9a84c;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+    }
+
+    .challenges-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .challenge-card {
+      background: #1a1520;
+      border: 1px solid rgba(201,168,76,0.2);
+      border-radius: 6px;
+      padding: 10px 10px 10px 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .challenge-card-body { flex: 1; min-width: 0; }
+
+    .challenge-card-name {
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.88rem;
+      color: #c9a84c;
+      margin-bottom: 2px;
+    }
+
+    .challenge-card-desc {
+      font-size: 0.7rem;
+      color: #c8c0b0;
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+
+    .challenge-card-fraction {
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.78rem;
+      color: #c9a84c;
+      margin-bottom: 4px;
+    }
+
+    .challenge-bar-track {
+      width: 100%;
+      height: 5px;
+      background: #2a2020;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .challenge-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8a6718, #c9a84c);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .challenge-bar-track::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        90deg, transparent 0, transparent calc(25% - 1px),
+        rgba(0,0,0,0.3) calc(25% - 1px), rgba(0,0,0,0.3) 25%
+      );
+      pointer-events: none;
+    }
+
+    .challenge-ready {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #34d399;
+      letter-spacing: 0.06em;
+    }
+
+    .challenge-card-preview {
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 4px;
+      object-fit: contain;
+      background: #0a0810;
+    }
+
+    .challenges-empty {
+      font-size: 0.75rem;
+      color: #6e5f44;
+      font-style: italic;
+      text-align: center;
+      padding: 6px 0;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════
        CHARACTER SCREEN
     ═══════════════════════════════════════════ */
     #screen-character {
@@ -942,6 +1128,24 @@
         </div><!-- /char-stats-panel -->
 
       </div><!-- /char-scroll -->
+
+      <!-- Pull-out tab trigger -->
+      <div id="challenges-tab">
+        <span id="challenges-tab-arrow">▶</span>
+      </div>
+
+      <!-- Overlay backdrop -->
+      <div id="challenges-overlay"></div>
+
+      <!-- Slide-out panel -->
+      <div id="challenges-panel">
+        <div class="challenges-panel-header">
+          <span class="challenges-panel-title">CLOSEST UNLOCKS</span>
+          <button class="challenges-close-btn" id="challenges-close">◀</button>
+        </div>
+        <div class="challenges-body" id="challenges-body"></div>
+      </div>
+
     </div><!-- /screen-character -->
 
     <!-- ── LOG SCREEN ── -->
@@ -2161,6 +2365,86 @@ function renderCharacter() {
 }
 
 /* ═══════════════════════════════════════════
+   CLOSEST CHALLENGES PANEL
+═══════════════════════════════════════════ */
+function getClosestChallenges() {
+  const counters = getCounters();
+  const unlocks  = getUnlocks();
+  const results  = [];
+
+  for (const [unlockKey, pm] of Object.entries(PROGRESS_MAP)) {
+    if (unlocks[unlockKey]) continue; // already unlocked
+    const cur = counters[pm.counter] || 0;
+    if (cur === 0) continue; // not started
+    const pct = Math.min(100, cur / pm.target * 100);
+    // Find catalog entry for this unlock key
+    let catalogItem = null;
+    for (const cat of Object.values(CATALOG)) {
+      const found = cat.find(i => i.unlockKey === unlockKey);
+      if (found) { catalogItem = found; break; }
+    }
+    if (!catalogItem) continue;
+    results.push({ unlockKey, pm, cur, pct, item: catalogItem });
+  }
+
+  results.sort((a, b) => b.pct - a.pct);
+  return results.slice(0, 3);
+}
+
+function renderChallengesPanel() {
+  const body = document.getElementById('challenges-body');
+  const challenges = getClosestChallenges();
+
+  if (challenges.length === 0) {
+    body.innerHTML = `<div class="challenges-empty">No challenges started yet.<br>Keep logging to discover your closest unlocks.</div>`;
+    return;
+  }
+
+  body.innerHTML = challenges.map(({ pm, cur, pct, item }) => {
+    const ready = pct >= 100;
+    const progressHtml = ready
+      ? `<div class="challenge-ready">✓ READY TO UNLOCK</div>`
+      : `<div class="challenge-card-fraction">${cur}/${pm.target}</div>
+         <div class="challenge-bar-track">
+           <div class="challenge-bar-fill" style="width:${pct.toFixed(1)}%"></div>
+         </div>`;
+    return `<div class="challenge-card">
+      <div class="challenge-card-body">
+        <div class="challenge-card-name">${item.name}</div>
+        <div class="challenge-card-desc">${item.cond}</div>
+        ${progressHtml}
+      </div>
+      <img class="challenge-card-preview" src="${item.file}" alt="${item.name}"
+           onerror="this.style.opacity='0.2'">
+    </div>`;
+  }).join('');
+
+  if (challenges.length < 3) {
+    body.innerHTML += `<div class="challenges-empty">Keep logging to discover more challenges.</div>`;
+  }
+}
+
+function openChallengesPanel() {
+  renderChallengesPanel();
+  document.getElementById('challenges-panel').classList.add('open');
+  document.getElementById('challenges-overlay').classList.add('open');
+  document.getElementById('challenges-tab-arrow').classList.add('open');
+}
+
+function closeChallengesPanel() {
+  document.getElementById('challenges-panel').classList.remove('open');
+  document.getElementById('challenges-overlay').classList.remove('open');
+  document.getElementById('challenges-tab-arrow').classList.remove('open');
+}
+
+document.getElementById('challenges-tab').addEventListener('click', () => {
+  const isOpen = document.getElementById('challenges-panel').classList.contains('open');
+  isOpen ? closeChallengesPanel() : openChallengesPanel();
+});
+document.getElementById('challenges-close').addEventListener('click', closeChallengesPanel);
+document.getElementById('challenges-overlay').addEventListener('click', closeChallengesPanel);
+
+/* ═══════════════════════════════════════════
    TOAST NOTIFICATIONS
 ═══════════════════════════════════════════ */
 function showLevelUpToast(statName, newLevel) {
@@ -2218,6 +2502,13 @@ function switchTab(tab) {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
   if (tab === 'vault') renderVault(_vaultTab);
+  const challengesTab = document.getElementById('challenges-tab');
+  if (tab === 'character') {
+    challengesTab.classList.add('visible');
+  } else {
+    challengesTab.classList.remove('visible');
+    closeChallengesPanel();
+  }
 }
 
 document.querySelectorAll('.nav-tab').forEach(btn => {
