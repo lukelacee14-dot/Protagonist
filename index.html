@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="protagonist-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Fredoka+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Fredoka+One&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <style>
     /* ═══════════════════════════════════════════
@@ -2955,9 +2955,9 @@ const BLACKSMITH_TOOLS = {
     tools: [
       { level:5,  id:'workout-logger',   name:'Workout Logger',        desc:'Log sets, reps and weights for every session',                       functional:true  },
       { level:10, id:'body-metrics',     name:'Body Metrics',          desc:'Track weight and measurements over time with a chart',               functional:false },
-      { level:20, id:'training-split',   name:'Training Split Planner',desc:'Build a personalised workout plan',                                  functional:false },
+      { level:20, id:'battle-plan',       name:'The Battle Plan',       desc:'Forge your weekly training split across strength, endurance and power', functional:true  },
       { level:35, id:'perf-analytics',   name:'Performance Analytics', desc:'Personal bests, strength trends and progress charts',                functional:false },
-      { level:50, id:'elite-coach',      name:'Elite Coach Mode',      desc:'Claude reviews your logs and gives weekly training advice',          functional:false },
+      { level:50, id:'champion-codex',   name:'The Champion\'s Codex', desc:'Weekly training summaries and personal records vault',               functional:true  },
     ],
   },
   wisdom: {
@@ -2965,10 +2965,10 @@ const BLACKSMITH_TOOLS = {
     icon: '📚',
     tools: [
       { level:5,  id:'reading-list',     name:'Reading List',          desc:'Track books to read, currently reading and finished',                functional:true  },
-      { level:10, id:'book-notes',       name:'Book Notes',            desc:'After logging a book Claude saves key insights to your dashboard',   functional:false },
-      { level:20, id:'study-planner',    name:'Study Planner',         desc:'Build a study schedule for any topic or exam',                       functional:false },
+      { level:10, id:'tome-knowledge',    name:'The Tome of Knowledge', desc:'Chronicle your books with insights, quotes and lessons applied',     functional:true  },
+      { level:20, id:'quest-log',        name:'The Quest Log',         desc:'Plan your study quests — subject, deadline, weekly hours and sessions', functional:true  },
       { level:35, id:'knowledge-map',    name:'Knowledge Map',         desc:'Visual web of everything you have studied and how topics connect',   functional:false },
-      { level:50, id:'deep-research',    name:'Deep Research Mode',    desc:'Claude becomes a dedicated research assistant for any topic',        functional:false },
+      { level:50, id:'scholar-compendium',name:'The Scholar\'s Compendium',desc:'Research archive — topics, sources, notes and summaries',        functional:true  },
     ],
   },
   discipline: {
@@ -2978,8 +2978,8 @@ const BLACKSMITH_TOOLS = {
       { level:5,  id:'streak-calendar',  name:'Streak Calendar',       desc:'Visual heatmap of your consistency across all activities',           functional:true  },
       { level:10, id:'morning-routine',  name:'Morning Routine Builder',desc:'Build and track a daily morning routine',                           functional:false },
       { level:20, id:'habit-stacking',   name:'Habit Stacking',        desc:'Chain habits together so completing one unlocks the next',           functional:false },
-      { level:35, id:'life-audit',       name:'Life Audit Tool',       desc:'Quarterly review of all stats and goals with Claude',               functional:false },
-      { level:50, id:'iron-will',        name:'Iron Will Mode',        desc:'Stricter verification and higher XP rewards for hardcore mode',      functional:false },
+      { level:35, id:'oracle-mirror',    name:'The Oracle\'s Mirror',  desc:'Quarterly reckoning — your wins, defeats, skills and next quest',   functional:true  },
+      { level:50, id:'hardcore-oath',    name:'Hardcore Oath',         desc:'Bind yourself with a sacred commitment and track your streak',       functional:true  },
     ],
   },
   charisma: {
@@ -2989,8 +2989,8 @@ const BLACKSMITH_TOOLS = {
       { level:5,  id:'connection-tracker',name:'Connection Tracker',   desc:'Log people you want to stay in touch with and when you last spoke',  functional:true  },
       { level:10, id:'convo-journal',    name:'Conversation Journal',  desc:'Log meaningful conversations and what you learned',                  functional:false },
       { level:20, id:'social-goals',     name:'Social Goals',          desc:'Set monthly targets for who you want to see or reconnect with',      functional:false },
-      { level:35, id:'relationship-map', name:'Relationship Map',      desc:'Visual web of your key relationships and connection strength',       functional:false },
-      { level:50, id:'life-coach',       name:'Life Coach Mode',       desc:'Claude helps you navigate difficult conversations and relationships', functional:false },
+      { level:35, id:'fellowship',       name:'The Fellowship',        desc:'Your party roster — allies, mentors, companions, family and rivals', functional:true  },
+      { level:50, id:'sage-counsel',     name:'The Sage\'s Counsel',   desc:'20 rotating reflection questions answered in your personal journal',  functional:true  },
     ],
   },
   creativity: {
@@ -2999,9 +2999,9 @@ const BLACKSMITH_TOOLS = {
     tools: [
       { level:5,  id:'project-tracker',  name:'Project Tracker',       desc:'Log active creative projects with progress and deadlines',           functional:true  },
       { level:10, id:'inspo-board',      name:'Inspiration Board',     desc:'Save images, links and ideas for creative projects',                 functional:false },
-      { level:20, id:'skill-roadmap',    name:'Skill Roadmap',         desc:'Claude maps out a learning path for any creative skill',             functional:false },
+      { level:20, id:'path-mastery',     name:'The Path of Mastery',   desc:'Track skills with milestones and an RPG progress bar',               functional:true  },
       { level:35, id:'portfolio-log',    name:'Portfolio Log',         desc:'Archive of everything you have made with dates and reflections',     functional:false },
-      { level:50, id:'creative-director',name:'Creative Director Mode',desc:'Claude acts as a creative collaborator on any project',              functional:false },
+      { level:50, id:'architect-vision', name:'The Architect\'s Vision',desc:'Project brief, mood board and notes for your greatest works',       functional:true  },
     ],
   },
 };
@@ -3051,11 +3051,22 @@ function openTool(toolId, stat) {
   const body = document.getElementById('bs-tool-body');
   body.innerHTML = '';
 
-  if (toolId === 'reading-list')       renderReadingList(body, data.color);
-  else if (toolId === 'streak-calendar') renderStreakCalendar(body, data.color);
-  else if (toolId === 'connection-tracker') renderConnectionTracker(body, data.color);
-  else if (toolId === 'project-tracker')   renderProjectTracker(body, data.color);
-  else if (toolId === 'workout-logger')    renderWorkoutLogger(body, data.color);
+  if      (toolId === 'reading-list')        renderReadingList(body, data.color);
+  else if (toolId === 'streak-calendar')     renderStreakCalendar(body, data.color);
+  else if (toolId === 'connection-tracker')  renderConnectionTracker(body, data.color);
+  else if (toolId === 'project-tracker')     renderProjectTracker(body, data.color);
+  else if (toolId === 'workout-logger')      renderWorkoutLogger(body, data.color);
+  else if (toolId === 'battle-plan')         renderBattlePlan(body, data.color);
+  else if (toolId === 'champion-codex')      renderChampionCodex(body, data.color);
+  else if (toolId === 'tome-knowledge')      renderTomeKnowledge(body, data.color);
+  else if (toolId === 'quest-log')           renderQuestLog(body, data.color);
+  else if (toolId === 'scholar-compendium')  renderScholarCompendium(body, data.color);
+  else if (toolId === 'oracle-mirror')       renderOracleMirror(body, data.color);
+  else if (toolId === 'hardcore-oath')       renderHardcoreOath(body, data.color);
+  else if (toolId === 'fellowship')          renderFellowship(body, data.color);
+  else if (toolId === 'sage-counsel')        renderSageCounsel(body, data.color);
+  else if (toolId === 'path-mastery')        renderPathMastery(body, data.color);
+  else if (toolId === 'architect-vision')    renderArchitectVision(body, data.color);
   else renderComingSoon(body, tool.name, tool.desc);
 
   document.getElementById('bs-tool-panel').classList.add('open');
@@ -3364,6 +3375,697 @@ function renderWorkoutLogger(body, color) {
         const all   = bsLoad('bs_workouts', []);
         const entry = all.find(s => s.date === today);
         if (entry) { entry.sets.splice(parseInt(btn.dataset.wdel), 1); bsSave('bs_workouts', all); }
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── bsToast helper ── */
+function bsToast(msg) {
+  let el = document.getElementById('bs-gold-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'bs-gold-toast';
+    el.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#c9a84c;color:#0a0a0a;font-family:"Fredoka One",cursive;font-size:0.9rem;padding:10px 22px;border-radius:20px;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+}
+
+/* ── RPG shared CSS injection ── */
+(function injectBsRpgCss() {
+  if (document.getElementById('bs-rpg-style')) return;
+  const s = document.createElement('style');
+  s.id = 'bs-rpg-style';
+  s.textContent = `
+    .bs-rpg-h { font-family:'Fredoka One',cursive; color:#c9a84c; font-size:0.88rem; margin:14px 0 6px; letter-spacing:0.03em; }
+    .bs-rpg-card { background:#111111; border:1px solid #2a1f0e; border-radius:10px; padding:12px; margin-bottom:10px; font-family:'DM Sans',sans-serif; }
+    .bs-rpg-label { font-family:'Fredoka One',cursive; color:#c9a84c; font-size:0.72rem; display:block; margin-bottom:4px; }
+    .bs-rpg-input { width:100%; box-sizing:border-box; background:#0a0a0a; border:1px solid #2a1f0e; border-radius:8px; color:#e8e4dc; font-family:'DM Sans',sans-serif; font-size:0.82rem; padding:8px 10px; outline:none; }
+    .bs-rpg-input:focus { border-color:#c9a84c66; }
+    .bs-rpg-textarea { width:100%; box-sizing:border-box; background:#0a0a0a; border:1px solid #2a1f0e; border-radius:8px; color:#e8e4dc; font-family:'DM Sans',sans-serif; font-size:0.82rem; padding:8px 10px; outline:none; resize:vertical; }
+    .bs-rpg-textarea:focus { border-color:#c9a84c66; }
+    .bs-rpg-select { width:100%; box-sizing:border-box; background:#0a0a0a; border:1px solid #2a1f0e; border-radius:8px; color:#e8e4dc; font-family:'DM Sans',sans-serif; font-size:0.82rem; padding:8px 10px; outline:none; }
+    .bs-save-btn { background:#c9a84c; color:#0a0a0a; font-family:'Fredoka One',cursive; font-size:0.85rem; border:none; border-radius:8px; padding:9px 20px; cursor:pointer; width:100%; margin-top:8px; }
+    .bs-save-btn:active { opacity:0.8; }
+    .bs-rpg-del { background:transparent; border:1px solid #c0392b44; color:#c0392b; font-size:0.7rem; border-radius:6px; padding:3px 8px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+    .bs-milestone-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #2a1f0e; }
+    .bs-milestone-check { width:20px; height:20px; border-radius:50%; border:2px solid #c9a84c44; background:#0a0a0a; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:0.7rem; }
+    .bs-milestone-check.done { background:#c9a84c22; border-color:#c9a84c; color:#c9a84c; }
+    .bs-fellowship-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .bs-fellowship-card { background:#111111; border:1px solid #2a1f0e; border-radius:10px; padding:10px; font-family:'DM Sans',sans-serif; }
+    .bs-oath-tablet { background:#111111; border:2px solid #c9a84c44; border-radius:12px; padding:16px; margin-bottom:12px; font-family:'DM Sans',sans-serif; text-align:center; }
+    .bs-oath-streak { font-family:'Fredoka One',cursive; color:#c9a84c; font-size:2rem; }
+    .bs-day-cell { width:30px; height:30px; border-radius:6px; background:#111111; border:1px solid #2a1f0e; display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#6b6760; flex-shrink:0; }
+    .bs-day-cell.active { background:#c9a84c33; border-color:#c9a84c66; color:#c9a84c; }
+    .bs-day-row { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px; }
+    .bs-prog-bar-outer { background:#2a1f0e; border-radius:20px; height:10px; overflow:hidden; margin:4px 0 12px; }
+    .bs-prog-bar-inner { height:100%; border-radius:20px; background:linear-gradient(90deg,#c9a84c,#f0c96c); transition:width 0.4s; }
+  `;
+  document.head.appendChild(s);
+})();
+
+/* ── Battle Plan (Strength Lv20) ── */
+function renderBattlePlan(body, color) {
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const GOALS = ['Strength','Endurance','Power','Balance','Hypertrophy','Mobility'];
+  function load() { return bsLoad('protagonist_battle_plan', { days: 4, goal: 'Strength', slots: {} }); }
+  function rerender() {
+    const plan = load();
+    const activeDays = DAYS.slice(0, plan.days);
+    body.innerHTML = `
+      <div class="bs-rpg-h">⚔️ Forge Your Battle Plan</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Training Days Per Week</label>
+        <select class="bs-rpg-select" id="bp-days">
+          ${[3,4,5,6].map(n => `<option value="${n}" ${plan.days==n?'selected':''}>${n} Days</option>`).join('')}
+        </select>
+        <label class="bs-rpg-label" style="margin-top:10px">Primary Goal</label>
+        <select class="bs-rpg-select" id="bp-goal">
+          ${GOALS.map(g => `<option value="${g}" ${plan.goal===g?'selected':''}>${g}</option>`).join('')}
+        </select>
+      </div>
+      <div class="bs-rpg-h">📋 Daily Assignments</div>
+      ${activeDays.map(day => `
+        <div class="bs-rpg-card">
+          <label class="bs-rpg-label">${day}</label>
+          <input class="bs-rpg-input" id="bp-${day}" placeholder="e.g. Push — chest, shoulders, triceps" value="${plan.slots[day]||''}" />
+        </div>`).join('')}
+      <button class="bs-save-btn" id="bp-save">⚒️ Engrave the Plan</button>`;
+    document.getElementById('bp-save').addEventListener('click', () => {
+      const newPlan = { days: parseInt(document.getElementById('bp-days').value), goal: document.getElementById('bp-goal').value, slots: {} };
+      DAYS.slice(0, newPlan.days).forEach(day => {
+        const el = document.getElementById('bp-'+day);
+        if (el) newPlan.slots[day] = el.value.trim();
+      });
+      bsSave('protagonist_battle_plan', newPlan);
+      bsToast('Battle Plan Engraved ⚔️');
+      rerender();
+    });
+  }
+  rerender();
+}
+
+/* ── Champion's Codex (Strength Lv50) ── */
+function renderChampionCodex(body, color) {
+  function rerender() {
+    const entries = bsLoad('protagonist_codex', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">🏆 Chronicle a Victory</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Week of</label>
+        <input class="bs-rpg-input" id="cc-week" type="date" value="${todayStr()}" />
+        <label class="bs-rpg-label" style="margin-top:8px">Summary of Training</label>
+        <textarea class="bs-rpg-textarea" id="cc-summary" rows="3" placeholder="What battles were fought this week?"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">Personal Record Set (if any)</label>
+        <input class="bs-rpg-input" id="cc-pr" placeholder="e.g. Deadlift 180kg" />
+        <button class="bs-save-btn" id="cc-add">⚔️ Record Victory</button>
+      </div>
+      <div class="bs-rpg-h">📜 The Codex (${entries.length} entries)</div>
+      ${entries.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">No victories recorded yet. Begin your chronicle.</div>`
+        : entries.map((e, i) => `
+          <div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.82rem">${e.week}</div>
+              <button class="bs-rpg-del" data-ccdel="${i}">✕</button>
+            </div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:0.8rem;color:#e8e4dc;margin-top:6px">${e.summary}</div>
+            ${e.pr ? `<div style="font-size:0.72rem;color:#c9a84c;margin-top:4px">🏅 PR: ${e.pr}</div>` : ''}
+          </div>`).join('')}`;
+    document.getElementById('cc-add').addEventListener('click', () => {
+      const week = document.getElementById('cc-week').value;
+      const summary = document.getElementById('cc-summary').value.trim();
+      const pr = document.getElementById('cc-pr').value.trim();
+      if (!summary) return;
+      const d = bsLoad('protagonist_codex', []);
+      d.unshift({ week, summary, pr });
+      if (d.length > 52) d.pop();
+      bsSave('protagonist_codex', d);
+      bsToast('Victory Recorded 🏆');
+      rerender();
+    });
+    body.querySelectorAll('[data-ccdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_codex', []);
+        d.splice(parseInt(btn.dataset.ccdel), 1);
+        bsSave('protagonist_codex', d);
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Tome of Knowledge (Wisdom Lv10) ── */
+function renderTomeKnowledge(body, color) {
+  function rerender() {
+    const tomes = bsLoad('protagonist_tome', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">📖 Add to the Tome</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Book Title</label>
+        <input class="bs-rpg-input" id="tk-title" placeholder="Title of the tome" />
+        <label class="bs-rpg-label" style="margin-top:8px">Key Insights</label>
+        <textarea class="bs-rpg-textarea" id="tk-insights" rows="3" placeholder="What wisdom did you extract?"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">Memorable Quote</label>
+        <input class="bs-rpg-input" id="tk-quote" placeholder="A passage that struck you…" />
+        <label class="bs-rpg-label" style="margin-top:8px">How Will You Apply This?</label>
+        <textarea class="bs-rpg-textarea" id="tk-apply" rows="2" placeholder="The quest this knowledge enables…"></textarea>
+        <button class="bs-save-btn" id="tk-add">📜 Inscribe to the Tome</button>
+      </div>
+      <div class="bs-rpg-h">📚 Inscribed Tomes (${tomes.length})</div>
+      ${tomes.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">The tome is empty. Inscribe your first book.</div>`
+        : tomes.map((t, i) => `
+          <div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.88rem">${t.title}</div>
+              <button class="bs-rpg-del" data-tkdel="${i}">✕</button>
+            </div>
+            ${t.insights ? `<div style="font-size:0.78rem;color:#e8e4dc;margin-top:6px">${t.insights}</div>` : ''}
+            ${t.quote ? `<div style="font-size:0.72rem;color:#c9a84c;margin-top:6px;font-style:italic">"${t.quote}"</div>` : ''}
+            ${t.apply ? `<div style="font-size:0.72rem;color:#6b9fff;margin-top:4px">⚡ ${t.apply}</div>` : ''}
+          </div>`).join('')}`;
+    document.getElementById('tk-add').addEventListener('click', () => {
+      const title = document.getElementById('tk-title').value.trim();
+      if (!title) return;
+      const d = bsLoad('protagonist_tome', []);
+      d.unshift({ title, insights: document.getElementById('tk-insights').value.trim(), quote: document.getElementById('tk-quote').value.trim(), apply: document.getElementById('tk-apply').value.trim(), date: todayStr() });
+      bsSave('protagonist_tome', d);
+      bsToast('Wisdom Inscribed 📖');
+      rerender();
+    });
+    body.querySelectorAll('[data-tkdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_tome', []);
+        d.splice(parseInt(btn.dataset.tkdel), 1);
+        bsSave('protagonist_tome', d);
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Quest Log (Wisdom Lv20) ── */
+function renderQuestLog(body, color) {
+  function rerender() {
+    const quests = bsLoad('protagonist_quest_log', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">⚡ Declare a Quest</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Subject / Topic</label>
+        <input class="bs-rpg-input" id="ql-subject" placeholder="e.g. JavaScript, History of Rome" />
+        <label class="bs-rpg-label" style="margin-top:8px">Deadline</label>
+        <input class="bs-rpg-input" id="ql-deadline" type="date" />
+        <label class="bs-rpg-label" style="margin-top:8px">Hours Per Week</label>
+        <input class="bs-rpg-input" id="ql-hours" type="number" min="1" max="40" placeholder="e.g. 5" />
+        <button class="bs-save-btn" id="ql-add">⚔️ Begin the Quest</button>
+      </div>
+      <div class="bs-rpg-h">📋 Active Quests (${quests.length})</div>
+      ${quests.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">No quests declared. The library awaits.</div>`
+        : quests.map((q, qi) => {
+          const sessions = q.sessions || [];
+          const doneCount = sessions.filter(s => s.done).length;
+          const weeksLeft = q.deadline ? Math.max(0, Math.ceil((new Date(q.deadline) - new Date()) / 604800000)) : '?';
+          const totalSessions = q.hours || 0;
+          return `<div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.88rem">${q.subject}</div>
+              <button class="bs-rpg-del" data-qldel="${qi}">✕</button>
+            </div>
+            <div style="font-size:0.7rem;color:#6b6760;margin:4px 0">${q.deadline ? 'Deadline: '+q.deadline : 'No deadline'} · ${q.hours}h/week · ${weeksLeft} weeks left</div>
+            <div class="bs-prog-bar-outer"><div class="bs-prog-bar-inner" style="width:${totalSessions>0?Math.round(doneCount/totalSessions*100):0}%"></div></div>
+            <div style="font-size:0.7rem;color:#6b6760;margin-bottom:8px">${doneCount}/${totalSessions} sessions complete</div>
+            ${sessions.map((s, si) => `
+              <div class="bs-milestone-row">
+                <div class="bs-milestone-check${s.done?' done':''}" data-qlcheck="${qi}-${si}">${s.done?'✓':''}</div>
+                <div style="font-size:0.78rem;color:${s.done?'#6b6760':'#e8e4dc'};font-family:'DM Sans',sans-serif;${s.done?'text-decoration:line-through':''}">Session ${si+1}</div>
+              </div>`).join('')}
+            <button class="bs-add-btn" data-qladd="${qi}" style="background:${color};font-size:0.7rem;padding:5px 12px;margin-top:8px">+ Session</button>
+          </div>`;
+        }).join('')}`;
+    document.getElementById('ql-add').addEventListener('click', () => {
+      const subject = document.getElementById('ql-subject').value.trim();
+      if (!subject) return;
+      const hours = parseInt(document.getElementById('ql-hours').value) || 3;
+      const deadline = document.getElementById('ql-deadline').value;
+      const sessions = Array.from({length: hours}, (_, i) => ({ done: false }));
+      const d = bsLoad('protagonist_quest_log', []);
+      d.unshift({ subject, deadline, hours, sessions });
+      bsSave('protagonist_quest_log', d);
+      bsToast('Quest Begins! ⚔️');
+      rerender();
+    });
+    body.querySelectorAll('[data-qldel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_quest_log', []);
+        d.splice(parseInt(btn.dataset.qldel), 1);
+        bsSave('protagonist_quest_log', d);
+        rerender();
+      });
+    });
+    body.querySelectorAll('[data-qlcheck]').forEach(el => {
+      el.addEventListener('click', () => {
+        const [qi, si] = el.dataset.qlcheck.split('-').map(Number);
+        const d = bsLoad('protagonist_quest_log', []);
+        if (d[qi] && d[qi].sessions[si]) { d[qi].sessions[si].done = !d[qi].sessions[si].done; bsSave('protagonist_quest_log', d); rerender(); }
+      });
+    });
+    body.querySelectorAll('[data-qladd]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qi = parseInt(btn.dataset.qladd);
+        const d = bsLoad('protagonist_quest_log', []);
+        if (d[qi]) { d[qi].sessions.push({ done: false }); d[qi].hours = d[qi].sessions.length; bsSave('protagonist_quest_log', d); rerender(); }
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Scholar's Compendium (Wisdom Lv50) ── */
+function renderScholarCompendium(body, color) {
+  function rerender() {
+    const topics = bsLoad('protagonist_compendium', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">🔬 Add Research Topic</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Topic Title</label>
+        <input class="bs-rpg-input" id="sc-topic" placeholder="e.g. Stoic Philosophy" />
+        <label class="bs-rpg-label" style="margin-top:8px">Sources (comma separated)</label>
+        <input class="bs-rpg-input" id="sc-sources" placeholder="Books, URLs, papers…" />
+        <label class="bs-rpg-label" style="margin-top:8px">Notes</label>
+        <textarea class="bs-rpg-textarea" id="sc-notes" rows="3" placeholder="Your research notes…"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">Summary Conclusion</label>
+        <textarea class="bs-rpg-textarea" id="sc-summary" rows="2" placeholder="What is the core truth you uncovered?"></textarea>
+        <button class="bs-save-btn" id="sc-add">📜 Enshrine in Compendium</button>
+      </div>
+      <div class="bs-rpg-h">📚 Compendium (${topics.length} topics)</div>
+      ${topics.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">The compendium is empty. Begin your research.</div>`
+        : topics.map((t, i) => `
+          <div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.88rem">${t.topic}</div>
+              <button class="bs-rpg-del" data-scdel="${i}">✕</button>
+            </div>
+            ${t.sources ? `<div style="font-size:0.68rem;color:#6b6760;margin-top:4px">Sources: ${t.sources}</div>` : ''}
+            ${t.notes ? `<div style="font-size:0.78rem;color:#e8e4dc;margin-top:6px">${t.notes}</div>` : ''}
+            ${t.summary ? `<div style="font-size:0.72rem;color:#6b9fff;margin-top:6px;font-style:italic">⚡ Conclusion: ${t.summary}</div>` : ''}
+          </div>`).join('')}`;
+    document.getElementById('sc-add').addEventListener('click', () => {
+      const topic = document.getElementById('sc-topic').value.trim();
+      if (!topic) return;
+      const d = bsLoad('protagonist_compendium', []);
+      d.unshift({ topic, sources: document.getElementById('sc-sources').value.trim(), notes: document.getElementById('sc-notes').value.trim(), summary: document.getElementById('sc-summary').value.trim(), date: todayStr() });
+      bsSave('protagonist_compendium', d);
+      bsToast('Enshrined in the Compendium 📚');
+      rerender();
+    });
+    body.querySelectorAll('[data-scdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_compendium', []);
+        d.splice(parseInt(btn.dataset.scdel), 1);
+        bsSave('protagonist_compendium', d);
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Oracle's Mirror (Discipline Lv35) ── */
+function renderOracleMirror(body, color) {
+  const QUARTERS = ['Q1 (Jan–Mar)','Q2 (Apr–Jun)','Q3 (Jul–Sep)','Q4 (Oct–Dec)'];
+  function rerender() {
+    const reflections = bsLoad('protagonist_oracle', []);
+    const thisYear = new Date().getFullYear();
+    body.innerHTML = `
+      <div class="bs-rpg-h">🔮 Step Before the Mirror</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Year & Quarter</label>
+        <select class="bs-rpg-select" id="om-quarter">
+          ${QUARTERS.map(q => `<option>${thisYear} ${q}</option>`).join('')}
+        </select>
+        <label class="bs-rpg-label" style="margin-top:8px">⚔️ Victories (what went well?)</label>
+        <textarea class="bs-rpg-textarea" id="om-wins" rows="2" placeholder="Your greatest achievements this quarter…"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">💀 Defeats (what held you back?)</label>
+        <textarea class="bs-rpg-textarea" id="om-defeats" rows="2" placeholder="What enemies, habits or weaknesses did you face?"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">🧠 Skills Forged</label>
+        <textarea class="bs-rpg-textarea" id="om-skills" rows="2" placeholder="What new abilities did you gain or sharpen?"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">🗺️ The Next Quest</label>
+        <textarea class="bs-rpg-textarea" id="om-next" rows="2" placeholder="Where does the road lead next quarter?"></textarea>
+        <button class="bs-save-btn" id="om-save">🔮 Seal the Reflection</button>
+      </div>
+      <div class="bs-rpg-h">📜 Past Reckonings (${reflections.length})</div>
+      ${reflections.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">The mirror holds no memories yet. Face it.</div>`
+        : reflections.map((r, i) => `
+          <div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.82rem">${r.quarter}</div>
+              <button class="bs-rpg-del" data-omdel="${i}">✕</button>
+            </div>
+            ${r.wins ? `<div style="font-size:0.72rem;color:#34d399;margin-top:4px">⚔️ ${r.wins}</div>` : ''}
+            ${r.defeats ? `<div style="font-size:0.72rem;color:#e05c5c;margin-top:4px">💀 ${r.defeats}</div>` : ''}
+            ${r.skills ? `<div style="font-size:0.72rem;color:#6b9fff;margin-top:4px">🧠 ${r.skills}</div>` : ''}
+            ${r.next ? `<div style="font-size:0.72rem;color:#c9a84c;margin-top:4px">🗺️ ${r.next}</div>` : ''}
+          </div>`).join('')}`;
+    document.getElementById('om-save').addEventListener('click', () => {
+      const wins = document.getElementById('om-wins').value.trim();
+      const defeats = document.getElementById('om-defeats').value.trim();
+      if (!wins && !defeats) return;
+      const d = bsLoad('protagonist_oracle', []);
+      d.unshift({ quarter: document.getElementById('om-quarter').value, wins, defeats, skills: document.getElementById('om-skills').value.trim(), next: document.getElementById('om-next').value.trim(), date: todayStr() });
+      bsSave('protagonist_oracle', d);
+      bsToast('Reflection Sealed 🔮');
+      rerender();
+    });
+    body.querySelectorAll('[data-omdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_oracle', []);
+        d.splice(parseInt(btn.dataset.omdel), 1);
+        bsSave('protagonist_oracle', d);
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Hardcore Oath (Discipline Lv50) ── */
+function renderHardcoreOath(body, color) {
+  function load() { return bsLoad('protagonist_oath', { text: '', startDate: null, lastCheckin: null, broken: false, streak: 0 }); }
+  function calcStreak(startDate, lastCheckin) {
+    if (!startDate) return 0;
+    const today = todayStr();
+    const last = lastCheckin || startDate;
+    const daysSince = Math.round((new Date(today) - new Date(last)) / 86400000);
+    if (daysSince > 1) return 0; // broken
+    return Math.round((new Date(today) - new Date(startDate)) / 86400000) + 1;
+  }
+  function rerender() {
+    const oath = load();
+    const streak = calcStreak(oath.startDate, oath.lastCheckin);
+    const today = todayStr();
+    const checkedInToday = oath.lastCheckin === today;
+    const days28 = Array.from({length:28}, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (27 - i)); return d.toISOString().slice(0,10); });
+    const start = oath.startDate ? new Date(oath.startDate) : null;
+    body.innerHTML = `
+      <div class="bs-oath-tablet">
+        <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:1rem;margin-bottom:8px">⚔️ THE OATH</div>
+        ${oath.text ? `<div style="font-family:'DM Sans',sans-serif;font-size:0.82rem;color:#e8e4dc;font-style:italic;margin-bottom:12px">"${oath.text}"</div>` : `<div style="color:#6b6760;font-size:0.78rem;font-style:italic;margin-bottom:12px">No oath sworn yet. Bind yourself below.</div>`}
+        <div class="bs-oath-streak">${streak}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.72rem;color:#6b6760">days unbroken</div>
+        ${oath.startDate ? `<div style="font-size:0.68rem;color:#6b6760;margin-top:6px">Sworn: ${oath.startDate}</div>` : ''}
+      </div>
+      ${oath.text && !checkedInToday ? `<button class="bs-save-btn" id="ho-checkin" style="background:#34d399;color:#0a0a0a;margin-bottom:12px">✓ I Hold My Oath Today</button>` : ''}
+      ${checkedInToday ? `<div style="text-align:center;font-family:'Fredoka One',cursive;color:#34d399;font-size:0.85rem;margin-bottom:12px">✓ Oath held today. The streak grows.</div>` : ''}
+      <div class="bs-day-row">
+        ${days28.map(d => `<div class="bs-day-cell${start && new Date(d) >= start && d <= today ? ' active' : ''}">${new Date(d).getDate()}</div>`).join('')}
+      </div>
+      <div class="bs-rpg-h">✍️ ${oath.text ? 'Reswear Oath' : 'Swear Your Oath'}</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">The Oath (your sacred commitment)</label>
+        <textarea class="bs-rpg-textarea" id="ho-text" rows="3" placeholder="I swear upon the old code that I shall…">${oath.text||''}</textarea>
+        <button class="bs-save-btn" id="ho-swear">⚔️ Swear the Oath</button>
+        ${oath.text ? `<button class="bs-rpg-del" id="ho-break" style="width:100%;margin-top:8px;padding:8px">💀 Break Oath (reset streak)</button>` : ''}
+      </div>`;
+    const swearBtn = document.getElementById('ho-swear');
+    if (swearBtn) swearBtn.addEventListener('click', () => {
+      const text = document.getElementById('ho-text').value.trim();
+      if (!text) return;
+      bsSave('protagonist_oath', { text, startDate: today, lastCheckin: null, streak: 0 });
+      bsToast('Oath Sworn. Hold it. ⚔️');
+      rerender();
+    });
+    const breakBtn = document.getElementById('ho-break');
+    if (breakBtn) breakBtn.addEventListener('click', () => {
+      if (!confirm('Break your oath and reset? The streak will be lost.')) return;
+      const o = load(); o.startDate = null; o.lastCheckin = null; o.streak = 0;
+      bsSave('protagonist_oath', o);
+      bsToast('Oath broken. Begin again. 💀');
+      rerender();
+    });
+    const checkinBtn = document.getElementById('ho-checkin');
+    if (checkinBtn) checkinBtn.addEventListener('click', () => {
+      const o = load(); o.lastCheckin = today;
+      bsSave('protagonist_oath', o);
+      bsToast('Oath Held ✓');
+      rerender();
+    });
+  }
+  rerender();
+}
+
+/* ── Fellowship (Charisma Lv35) ── */
+const FELLOWSHIP_ROLES = ['Ally','Mentor','Companion','Family','Rival'];
+const FELLOWSHIP_COLORS = { 'Ally':'#34d399','Mentor':'#6b9fff','Companion':'#f472b6','Family':'#c9a84c','Rival':'#e05c5c' };
+function renderFellowship(body, color) {
+  function rerender() {
+    const party = bsLoad('protagonist_fellowship', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">⚔️ Recruit a Party Member</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Name</label>
+        <input class="bs-rpg-input" id="fw-name" placeholder="Their name" />
+        <label class="bs-rpg-label" style="margin-top:8px">Role</label>
+        <select class="bs-rpg-select" id="fw-role">
+          ${FELLOWSHIP_ROLES.map(r => `<option>${r}</option>`).join('')}
+        </select>
+        <label class="bs-rpg-label" style="margin-top:8px">Notes (optional)</label>
+        <input class="bs-rpg-input" id="fw-notes" placeholder="How they aid your quest…" />
+        <button class="bs-save-btn" id="fw-add">⚔️ Add to Fellowship</button>
+      </div>
+      <div class="bs-rpg-h">🛡️ Your Party (${party.length})</div>
+      ${party.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">Your party is empty. Every hero needs companions.</div>`
+        : `<div class="bs-fellowship-grid">
+          ${party.map((p, i) => `
+            <div class="bs-fellowship-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+                <span style="font-size:0.6rem;background:${FELLOWSHIP_COLORS[p.role]||'#c9a84c'}22;color:${FELLOWSHIP_COLORS[p.role]||'#c9a84c'};border:1px solid ${FELLOWSHIP_COLORS[p.role]||'#c9a84c'}44;border-radius:20px;padding:1px 7px">${p.role}</span>
+                <button class="bs-rpg-del" data-fwdel="${i}">✕</button>
+              </div>
+              <div style="font-family:'Fredoka One',cursive;color:#e8e4dc;font-size:0.88rem">${p.name}</div>
+              ${p.notes ? `<div style="font-size:0.68rem;color:#6b6760;margin-top:3px">${p.notes}</div>` : ''}
+            </div>`).join('')}
+        </div>`}`;
+    document.getElementById('fw-add').addEventListener('click', () => {
+      const name = document.getElementById('fw-name').value.trim();
+      if (!name) return;
+      const d = bsLoad('protagonist_fellowship', []);
+      d.push({ id: Date.now().toString(), name, role: document.getElementById('fw-role').value, notes: document.getElementById('fw-notes').value.trim() });
+      bsSave('protagonist_fellowship', d);
+      bsToast('Party Member Recruited ⚔️');
+      rerender();
+    });
+    body.querySelectorAll('[data-fwdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_fellowship', []);
+        d.splice(parseInt(btn.dataset.fwdel), 1);
+        bsSave('protagonist_fellowship', d);
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Sage's Counsel (Charisma Lv50) ── */
+const SAGE_QUESTIONS = [
+  'Who in your life are you taking for granted, and how could you show them more?',
+  'What conversation have you been avoiding, and why does it scare you?',
+  'Which relationship in your life needs the most investment right now?',
+  'What is the most important thing you have learned from someone this week?',
+  'How well are you truly listening when others speak to you?',
+  'Who has had the greatest influence on who you are today, and have you told them?',
+  'What would change if you approached every interaction with genuine curiosity?',
+  'Where in your social life are you performing rather than connecting?',
+  'Who do you need to forgive, and what would that forgiveness free in you?',
+  'What do the people closest to you actually need from you right now?',
+  'How do you show up differently with strangers versus people you know well?',
+  'What quality do you most admire in others that you want to cultivate in yourself?',
+  'When did you last make someone feel truly seen and heard?',
+  'What is one relationship you have let fade that deserves to be rekindled?',
+  'How do your words and actions align when it comes to the people you say you care about?',
+  'What do you need to communicate but have not found the courage to say?',
+  'In what ways do you bring energy to others, and in what ways do you drain it?',
+  'Who challenges you to be better, and are you grateful enough for that discomfort?',
+  'What is the most meaningful conversation you have had recently, and what made it so?',
+  'If your closest companions described you, what would they say — and is that who you want to be?'
+];
+function renderSageCounsel(body, color) {
+  const weekNum = Math.floor(Date.now() / 604800000);
+  const questionIdx = weekNum % SAGE_QUESTIONS.length;
+  const question = SAGE_QUESTIONS[questionIdx];
+  function rerender() {
+    const entries = bsLoad('protagonist_sage', []);
+    const thisWeekKey = new Date().toISOString().slice(0, 7) + '-W' + (weekNum % 52);
+    const existing = entries.find(e => e.weekKey === thisWeekKey);
+    body.innerHTML = `
+      <div style="background:#111111;border:2px solid #c9a84c44;border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.72rem;margin-bottom:8px">⚡ THIS WEEK'S QUESTION FROM THE SAGE</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.88rem;color:#e8e4dc;line-height:1.5;font-style:italic">"${question}"</div>
+      </div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Your Answer</label>
+        <textarea class="bs-rpg-textarea" id="sg-answer" rows="5" placeholder="Speak honestly. The sage listens.">${existing ? existing.answer : ''}</textarea>
+        <button class="bs-save-btn" id="sg-save">📜 Offer to the Sage</button>
+      </div>
+      <div class="bs-rpg-h">📚 Past Counsel (${entries.length} entries)</div>
+      ${entries.slice(0, 10).map((e, i) => `
+        <div class="bs-rpg-card">
+          <div style="font-size:0.68rem;color:#c9a84c;margin-bottom:6px;font-family:'Fredoka One',cursive">${e.weekKey}</div>
+          <div style="font-size:0.72rem;color:#6b9fff;font-style:italic;margin-bottom:6px">"${e.question}"</div>
+          <div style="font-size:0.78rem;color:#e8e4dc;font-family:'DM Sans',sans-serif">${e.answer}</div>
+        </div>`).join('')}`;
+    document.getElementById('sg-save').addEventListener('click', () => {
+      const answer = document.getElementById('sg-answer').value.trim();
+      if (!answer) return;
+      const d = bsLoad('protagonist_sage', []);
+      const idx = d.findIndex(e => e.weekKey === thisWeekKey);
+      const entry = { weekKey: thisWeekKey, question, answer, date: todayStr() };
+      if (idx >= 0) d[idx] = entry; else d.unshift(entry);
+      if (d.length > 100) d.pop();
+      bsSave('protagonist_sage', d);
+      bsToast('Wisdom offered to the Sage 📜');
+      rerender();
+    });
+  }
+  rerender();
+}
+
+/* ── Path of Mastery (Creativity Lv20) ── */
+function renderPathMastery(body, color) {
+  function rerender() {
+    const skills = bsLoad('protagonist_path', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">🎯 Add a Skill to Master</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Skill Name</label>
+        <input class="bs-rpg-input" id="pm-skill" placeholder="e.g. Watercolour, Python, Guitar" />
+        <label class="bs-rpg-label" style="margin-top:8px">Target Level / Goal</label>
+        <input class="bs-rpg-input" id="pm-goal" placeholder="e.g. Complete beginner course, paint 20 pieces" />
+        <button class="bs-save-btn" id="pm-add">⚔️ Begin the Path</button>
+      </div>
+      <div class="bs-rpg-h">🗡️ Skills in Progress (${skills.length})</div>
+      ${skills.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">No skills on the path yet. Every master begins here.</div>`
+        : skills.map((sk, si) => {
+          const done = (sk.milestones || []).filter(m => m.done).length;
+          const total = (sk.milestones || []).length;
+          const pct = total > 0 ? Math.round(done / total * 100) : 0;
+          return `<div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.88rem">${sk.name}</div>
+              <button class="bs-rpg-del" data-pmdel="${si}">✕</button>
+            </div>
+            ${sk.goal ? `<div style="font-size:0.7rem;color:#6b6760;margin:3px 0 6px">🎯 ${sk.goal}</div>` : ''}
+            <div class="bs-prog-bar-outer"><div class="bs-prog-bar-inner" style="width:${pct}%;background:linear-gradient(90deg,${color},${color}cc)"></div></div>
+            <div style="font-size:0.68rem;color:#6b6760;margin-bottom:8px">${pct}% — ${done}/${total} milestones</div>
+            ${(sk.milestones||[]).map((m, mi) => `
+              <div class="bs-milestone-row">
+                <div class="bs-milestone-check${m.done?' done':''}" data-pmcheck="${si}-${mi}">${m.done?'✓':''}</div>
+                <div style="font-size:0.78rem;font-family:'DM Sans',sans-serif;color:${m.done?'#6b6760':'#e8e4dc'};${m.done?'text-decoration:line-through':''}">${m.text}</div>
+                <button class="bs-rpg-del" data-pmmildel="${si}-${mi}" style="margin-left:auto">✕</button>
+              </div>`).join('')}
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <input class="bs-rpg-input" id="pm-mil-${si}" placeholder="Add milestone…" style="flex:1" />
+              <button class="bs-add-btn" data-pmmiladd="${si}" style="background:${color};font-size:0.7rem;padding:6px 12px">+</button>
+            </div>
+          </div>`;
+        }).join('')}`;
+    document.getElementById('pm-add').addEventListener('click', () => {
+      const name = document.getElementById('pm-skill').value.trim();
+      if (!name) return;
+      const d = bsLoad('protagonist_path', []);
+      d.unshift({ name, goal: document.getElementById('pm-goal').value.trim(), milestones: [] });
+      bsSave('protagonist_path', d);
+      bsToast('Path Begun ⚔️');
+      rerender();
+    });
+    body.querySelectorAll('[data-pmdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_path', []);
+        d.splice(parseInt(btn.dataset.pmdel), 1);
+        bsSave('protagonist_path', d);
+        rerender();
+      });
+    });
+    body.querySelectorAll('[data-pmcheck]').forEach(el => {
+      el.addEventListener('click', () => {
+        const [si, mi] = el.dataset.pmcheck.split('-').map(Number);
+        const d = bsLoad('protagonist_path', []);
+        if (d[si] && d[si].milestones[mi]) { d[si].milestones[mi].done = !d[si].milestones[mi].done; bsSave('protagonist_path', d); rerender(); }
+      });
+    });
+    body.querySelectorAll('[data-pmmiladd]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const si = parseInt(btn.dataset.pmmiladd);
+        const inp = document.getElementById('pm-mil-'+si);
+        const text = inp ? inp.value.trim() : '';
+        if (!text) return;
+        const d = bsLoad('protagonist_path', []);
+        if (d[si]) { d[si].milestones.push({ text, done: false }); bsSave('protagonist_path', d); rerender(); }
+      });
+    });
+    body.querySelectorAll('[data-pmmildel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const [si, mi] = btn.dataset.pmmildel.split('-').map(Number);
+        const d = bsLoad('protagonist_path', []);
+        if (d[si]) { d[si].milestones.splice(mi, 1); bsSave('protagonist_path', d); rerender(); }
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Architect's Vision (Creativity Lv50) ── */
+function renderArchitectVision(body, color) {
+  function rerender() {
+    const projects = bsLoad('protagonist_vision', []);
+    body.innerHTML = `
+      <div class="bs-rpg-h">🏛️ New Vision</div>
+      <div class="bs-rpg-card">
+        <label class="bs-rpg-label">Project Title</label>
+        <input class="bs-rpg-input" id="av-title" placeholder="The name of your great work" />
+        <label class="bs-rpg-label" style="margin-top:8px">Brief (what is this and why does it matter?)</label>
+        <textarea class="bs-rpg-textarea" id="av-brief" rows="3" placeholder="Describe the vision in full…"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">Mood Board (image URLs, comma separated)</label>
+        <textarea class="bs-rpg-textarea" id="av-images" rows="2" placeholder="https://… , https://…"></textarea>
+        <label class="bs-rpg-label" style="margin-top:8px">Notes</label>
+        <textarea class="bs-rpg-textarea" id="av-notes" rows="2" placeholder="Ideas, constraints, inspirations…"></textarea>
+        <button class="bs-save-btn" id="av-add">🏛️ Enshrine the Vision</button>
+      </div>
+      <div class="bs-rpg-h">🗡️ The Vault of Visions (${projects.length})</div>
+      ${projects.length === 0 ? `<div style="color:#6b6760;font-size:0.78rem;font-style:italic">No visions enshrined yet. What great work calls to you?</div>`
+        : projects.map((p, i) => {
+          const imgs = (p.images || '').split(',').map(u => u.trim()).filter(Boolean);
+          return `<div class="bs-rpg-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="font-family:'Fredoka One',cursive;color:#c9a84c;font-size:0.9rem">${p.title}</div>
+              <button class="bs-rpg-del" data-avdel="${i}">✕</button>
+            </div>
+            ${p.brief ? `<div style="font-size:0.78rem;color:#e8e4dc;margin-top:6px;font-family:'DM Sans',sans-serif">${p.brief}</div>` : ''}
+            ${imgs.length > 0 ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${imgs.map(u => `<img src="${u}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #2a1f0e" onerror="this.style.display='none'" />`).join('')}</div>` : ''}
+            ${p.notes ? `<div style="font-size:0.72rem;color:#6b6760;margin-top:6px;font-style:italic">${p.notes}</div>` : ''}
+          </div>`;
+        }).join('')}`;
+    document.getElementById('av-add').addEventListener('click', () => {
+      const title = document.getElementById('av-title').value.trim();
+      if (!title) return;
+      const d = bsLoad('protagonist_vision', []);
+      d.unshift({ title, brief: document.getElementById('av-brief').value.trim(), images: document.getElementById('av-images').value.trim(), notes: document.getElementById('av-notes').value.trim(), date: todayStr() });
+      bsSave('protagonist_vision', d);
+      bsToast('Vision Enshrined 🏛️');
+      rerender();
+    });
+    body.querySelectorAll('[data-avdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('protagonist_vision', []);
+        d.splice(parseInt(btn.dataset.avdel), 1);
+        bsSave('protagonist_vision', d);
         rerender();
       });
     });
