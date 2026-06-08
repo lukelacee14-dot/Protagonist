@@ -1463,6 +1463,62 @@ const ACTIVITIES = {
       { text:'Describe the moment you achieved it — what happened?', min:20 },
       { text:'What does this personal best mean to you in terms of your progress?', min:20 },
     ]},
+    { name:'Hit a new one rep max on any lift', xp:250, counter:'one-rep-maxes', questions:[
+      { text:'What lift did you hit a one rep max on and what was the weight?', min:10 },
+      { text:'What was your previous one rep max on this lift and how long did it take to get here?', min:15 },
+      { text:'Describe your warmup and preparation before the attempt.', min:15 },
+      { text:'Describe the moment of the lift — what it felt like physically and mentally.', min:25 },
+      { text:'What does this one rep max tell you about where your training is heading?', min:20 },
+    ]},
+    { name:'Did a full body workout hitting every muscle group', xp:130, counter:'full-body-sessions', questions:[
+      { text:'List the exercises you did and which muscle groups each targeted.', min:15 },
+      { text:'How did you structure the session — what order and why?', min:15 },
+      { text:'Which muscle group was hardest to train today and why?', min:15 },
+      { text:'How did your energy levels hold up across the whole session?', min:15 },
+      { text:'What will you change or improve in your next full body session?', min:15 },
+    ]},
+    { name:'Ran 5km', xp:100, counter:'runs-5km', questions:[
+      { text:'What was your time and how does that compare to previous 5km runs?', min:10 },
+      { text:'Describe the route and conditions — terrain, weather, time of day.', min:15 },
+      { text:'At what point during the run did it get hardest and how did you push through?', min:20 },
+      { text:'How did your body feel in the final kilometre?', min:15 },
+      { text:'What is your goal for your next 5km?', min:15 },
+    ]},
+    { name:'Ran 10km', xp:175, counter:'runs-10km', questions:[
+      { text:'What was your time and how does that compare to previous 10km runs?', min:10 },
+      { text:'How did you pace yourself — did you go out too fast, too slow, or just right?', min:20 },
+      { text:'Describe the hardest kilometre and what got you through it.', min:20 },
+      { text:'What did your nutrition and hydration look like before and during?', min:15 },
+      { text:'What would you do differently in your next 10km?', min:20 },
+    ]},
+    { name:'Completed a half marathon', xp:400, counter:'half-marathons', questions:[
+      { text:'What was your finishing time and where did the race or run take place?', min:10 },
+      { text:'How did your training prepare you for this — what did you do well and what was lacking?', min:25 },
+      { text:'Describe kilometres 15 to 21 — the hardest section of any half marathon.', min:25 },
+      { text:'What was the moment you knew you were going to finish?', min:20 },
+      { text:'What does completing a half marathon mean to you in terms of your physical identity?', min:25 },
+    ]},
+    { name:'Completed a full stretching or mobility session', xp:75, counter:'mobility-sessions', questions:[
+      { text:'What stretches or mobility work did you do and how long was the session?', min:10 },
+      { text:'What areas of your body felt most restricted and how did they feel after?', min:20 },
+      { text:'Was this planned recovery work or did your body tell you it needed it today?', min:15 },
+      { text:'How does prioritising mobility fit into your broader physical training approach?', min:20 },
+      { text:'What difference do you notice in your body when you are consistent with mobility work?', min:20 },
+    ]},
+    { name:'Went on a hike covering significant elevation or distance', xp:150, counter:'hikes', questions:[
+      { text:'Where did you hike, how far did you go, and how much elevation did you cover?', min:15 },
+      { text:'What was the most physically demanding section and how did you manage it?', min:20 },
+      { text:'Describe what you noticed about your surroundings during the hike — what stood out?', min:20 },
+      { text:'How did your body feel differently during a hike compared to gym or road training?', min:20 },
+      { text:'What does getting out into nature and moving your body mean to you?', min:20 },
+    ]},
+    { name:'Completed an outdoor physical challenge', xp:200, counter:'outdoor-challenges', questions:[
+      { text:'What was the challenge specifically and what did it involve physically?', min:15 },
+      { text:'What aspect of the challenge scared or intimidated you most before you started?', min:20 },
+      { text:'Describe the hardest moment during the challenge and how you got through it.', min:25 },
+      { text:'What surprised you about what your body was capable of during this challenge?', min:20 },
+      { text:'What does completing something like this tell you about who you are physically and mentally?', min:25 },
+    ]},
   ],
   wisdom: [
     { name:'Read a chapter of a non-fiction book', xp:100, counter:'chapters-read', questions:[
@@ -1926,6 +1982,8 @@ const CATALOG = {
     { file:'callsign-the-breakthrough.png',    name:'The Breakthrough',      unlockKey:'sp-the-breakthrough', cond:'First personal best' },
     { file:'callsign-the-improving.png',       name:'The Improving',         unlockKey:'sp-the-improving',    cond:'5 personal bests' },
     { file:'callsign-the-unbeaten.png',        name:'The Unbeaten',          unlockKey:'sp-the-unbeaten',     cond:'10 personal bests' },
+    { file:'callsign-the-furthest.png',        name:'The Furthest',          unlockKey:'sp-the-furthest',     cond:'Go on 10 hikes' },
+    { file:'callsign-the-complete-athlete.png',name:'The Complete Athlete',  unlockKey:'sp-the-complete-athlete', cond:'Complete 5 outdoor challenges' },
     // Wisdom specials
     { file:'callsign-the-reader.png',          name:'The Reader',            unlockKey:'sp-the-reader',       cond:'Finish 10 non-fiction books' },
     { file:'callsign-the-scholar.png',         name:'The Scholar',           unlockKey:'sp-the-scholar',      cond:'Finish 25 non-fiction books' },
@@ -2129,6 +2187,8 @@ const PROGRESS_MAP = {
   'sp-the-persistent':         { counter:'competitions-entered',    target:15 },
   'sp-the-collaborator':       { counter:'collaborations',          target:10 },
   'sp-the-carer':              { counter:'dog-walks',               target:100 },
+  'sp-the-furthest':           { counter:'hikes',                   target:10 },
+  'sp-the-complete-athlete':   { counter:'outdoor-challenges',      target:5 },
   'sp-the-morning-guardian':   { counter:'no-phone-morning-streak', target:30 },
   'sp-the-night-keeper':       { counter:'digital-sunset-streak',   target:30 },
   'sp-the-willful':            { counter:'temptation-streak',       target:30 },
@@ -2283,6 +2343,13 @@ function checkAllUnlocks() {
   t('competitions-entered',5,'the-contender','Enter 5 competitions');
   t('competitions-entered',15,'the-persistent','Enter competitions 15 times');
   t('collaborations',10,'the-collaborator','Collaborate 10 times');
+  t('hikes',10,'the-furthest','Go on 10 hikes');
+  t('outdoor-challenges',5,'the-complete-athlete','Complete 5 outdoor challenges');
+  // runs-5km also counts toward the-pavement-pounder
+  if ((c['runs-5km']||0) >= 1) t('run-sessions',10,'the-pavement-pounder','Log run 10 times');
+  // half-marathons also unlocks the-distance
+  if ((c['half-marathons']||0) >= 1) t('run-sessions',100,'the-distance','Log run 100 times');
+  // runs-10km rolls into run-sessions for existing unlock checks (counters increment separately)
 
   if (newU.length) save(K.unlocks, u);
   return newU;
