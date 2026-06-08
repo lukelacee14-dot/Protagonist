@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="protagonist-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Fredoka+One&display=swap" rel="stylesheet" />
 
   <style>
     /* ═══════════════════════════════════════════
@@ -254,6 +254,7 @@
 
     /* ── Callsign banner ── */
     .char-callsign-wrap {
+      position: relative;
       width: 207px;
       height: 70px;
       display: flex;
@@ -267,6 +268,20 @@
       height: 70px;
       object-fit: contain;
       object-position: center;
+    }
+
+    .char-callsign-title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Fredoka One', cursive;
+      font-size: 14px;
+      color: #c9a84c;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+      white-space: nowrap;
+      pointer-events: none;
+      letter-spacing: 0.02em;
     }
 
     /* ── Character icon ── */
@@ -382,6 +397,13 @@
       padding: 9px 12px;
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .char-stat-row:active {
+      box-shadow: 0 0 0 2px #c9a84c88;
+      border-color: #c9a84c;
     }
 
     .char-stat-icon-wrap {
@@ -797,8 +819,8 @@
         <div class="char-callsign-wrap">
           <img id="char-callsign-img" class="char-callsign-img"
                src="callsign-wanderer.png" alt="Callsign" />
+          <div id="char-callsign-name" class="char-callsign-title"></div>
         </div>
-        <div id="char-callsign-name" style="font-family:var(--font-display);font-size:0.72rem;letter-spacing:0.12em;color:var(--gold-bright);text-transform:uppercase;margin-top:-6px;margin-bottom:10px;text-align:center;text-shadow:0 0 12px rgba(212,165,42,0.4);"></div>
 
         <!-- Character icon -->
         <div class="char-icon-wrap">
@@ -817,7 +839,7 @@
         <div class="char-xp-wrap">
           <div class="char-xp-label-row">
             <span id="char-xp-label-left">Overall Progress</span>
-            <span id="char-xp-label-right">0 / 500 XP</span>
+            <span id="char-xp-label-right">0 / 250 XP</span>
           </div>
           <div class="char-xp-bar-track">
             <div class="char-xp-bar-fill" id="char-xp-bar-fill" style="width:0%"></div>
@@ -942,6 +964,7 @@
         <button class="vault-tab active" data-vault-tab="callsigns">Callsigns</button>
         <button class="vault-tab"        data-vault-tab="icons">Icons</button>
         <button class="vault-tab"        data-vault-tab="prestige">Prestige</button>
+        <button class="vault-tab"        data-vault-tab="skilltree">Skill Tree</button>
       </div>
       <div id="vault-grid-wrap" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;">
         <div class="vault-grid" id="vault-grid"></div>
@@ -1093,11 +1116,7 @@ const STAT_META = {
 const MAX_LEVEL = 50;
 
 function xpForLevel(lv) {
-  if (lv <= 5)  return 500;
-  if (lv <= 15) return 1000;
-  if (lv <= 30) return 2500;
-  if (lv <= 45) return 5000;
-  return 10000;
+  return 250;
 }
 
 /* ═══════════════════════════════════════════
@@ -1825,6 +1844,104 @@ const CATALOG = {
   ],
 };
 
+// Counter/streak progress for locked vault items { unlockKey: {counter, target} }
+const PROGRESS_MAP = {
+  'sp-the-regular':            { counter:'gym-sessions',            target:10 },
+  'sp-the-dedicated':          { counter:'gym-sessions',            target:50 },
+  'sp-the-ironclad':           { counter:'gym-sessions',            target:100 },
+  'sp-the-eternal-grind':      { counter:'gym-sessions',            target:365 },
+  'sp-the-pavement-pounder':   { counter:'run-sessions',            target:10 },
+  'sp-the-endurance':          { counter:'run-sessions',            target:50 },
+  'sp-the-distance':           { counter:'run-sessions',            target:100 },
+  'sp-the-self-starter':       { counter:'home-workout-sessions',   target:10 },
+  'sp-the-homegrown':          { counter:'home-workout-sessions',   target:50 },
+  'sp-the-self-made':          { counter:'home-workout-sessions',   target:100 },
+  'sp-the-athlete':            { counter:'sport-sessions',          target:10 },
+  'sp-the-competitor':         { counter:'sport-sessions',          target:50 },
+  'sp-the-sportsman':          { counter:'sport-sessions',          target:100 },
+  'sp-the-breakthrough':       { counter:'personal-bests',          target:1 },
+  'sp-the-improving':          { counter:'personal-bests',          target:5 },
+  'sp-the-unbeaten':           { counter:'personal-bests',          target:10 },
+  'sp-the-reader':             { counter:'books-finished',          target:10 },
+  'sp-the-scholar':            { counter:'books-finished',          target:25 },
+  'sp-the-practitioner':       { counter:'knowledge-applied',       target:5 },
+  'sp-the-open-mind':          { counter:'mind-changed',            target:5 },
+  'sp-the-teacher':            { counter:'taught-count',            target:10 },
+  'sp-the-graduate':           { counter:'degrees-completed',       target:1 },
+  'sp-the-linguist':           { counter:'language-sessions',       target:30 },
+  'sp-the-polyglot':           { counter:'language-sessions',       target:100 },
+  'sp-the-unplugged':          { counter:'social-media-deleted',    target:1 },
+  'sp-the-liberated':          { counter:'social-media-deleted',    target:4 },
+  'sp-the-clear-mind':         { counter:'no-social-days',         target:30 },
+  'sp-the-free':               { counter:'no-social-days',         target:100 },
+  'sp-the-sovereign':          { counter:'no-social-days',         target:365 },
+  'sp-the-focused-mind':       { counter:'deep-work-sessions',      target:50 },
+  'sp-the-flow-state':         { counter:'deep-work-sessions',      target:100 },
+  'sp-the-craftsman':          { counter:'deep-work-sessions',      target:200 },
+  'sp-the-still':              { counter:'boredom-sessions',        target:10 },
+  'sp-the-present':            { counter:'boredom-sessions',        target:30 },
+  'sp-the-sage':               { counter:'boredom-sessions',        target:100 },
+  'sp-the-mindful':            { counter:'meditation-sessions',     target:30 },
+  'sp-the-centred':            { counter:'meditation-sessions',     target:100 },
+  'sp-the-starter':            { counter:'procrastination-finished',target:10 },
+  'sp-the-kin':                { counter:'family-calls',            target:50 },
+  'sp-the-weaver':             { counter:'lost-connections',        target:25 },
+  'sp-the-magnetic':           { counter:'new-connections',         target:10 },
+  'sp-the-social-architect':   { counter:'new-connections',         target:25 },
+  'sp-the-human':              { counter:'stranger-conversations',  target:25 },
+  'sp-the-present-friend':     { counter:'friend-quality-time',     target:50 },
+  'sp-the-courageous':         { counter:'difficult-conversations', target:10 },
+  'sp-the-humble':             { counter:'apologies',               target:10 },
+  'sp-the-sovereign-self':     { counter:'said-no-count',           target:25 },
+  'sp-the-defender':           { counter:'stood-up-count',          target:10 },
+  'sp-the-protector':          { counter:'stood-up-for-others',     target:5 },
+  'sp-the-expansive':          { counter:'comfort-zone-events',     target:10 },
+  'sp-the-generous':           { counter:'courageous-compliments',  target:10 },
+  'sp-the-humble-strength':    { counter:'asked-for-help',          target:10 },
+  'sp-the-host':               { counter:'gatherings-organised',    target:5 },
+  'sp-the-gatherer':           { counter:'gatherings-organised',    target:15 },
+  'sp-the-anchor':             { counter:'mentored-count',          target:10 },
+  'sp-the-intimate':           { counter:'vulnerable-partner-convos',target:5 },
+  'sp-the-romantic':           { counter:'intentional-dates',       target:10 },
+  'sp-the-loving':             { counter:'expressed-love',          target:15 },
+  'sp-the-maker':              { counter:'creative-sessions',       target:50 },
+  'sp-the-dedicated-creator':  { counter:'creative-sessions',       target:100 },
+  'sp-the-finisher':           { counter:'projects-finished',       target:5 },
+  'sp-the-artisan':            { counter:'things-made',             target:50 },
+  'sp-the-cook':               { counter:'cooked-from-scratch',     target:30 },
+  'sp-the-chef':               { counter:'cooked-from-scratch',     target:100 },
+  'sp-the-musician':           { counter:'instrument-sessions',     target:100 },
+  'sp-the-virtuoso':           { counter:'instrument-sessions',     target:500 },
+  'sp-the-performer':          { counter:'perform-and-practice',    target:10 },
+  'sp-the-stage':              { counter:'music-performances',      target:50 },
+  'sp-the-speaker':            { counter:'public-speeches',         target:5 },
+  'sp-the-orator':             { counter:'public-speeches',         target:15 },
+  'sp-the-voice':              { counter:'public-speeches',         target:1 },
+  'sp-the-writer':             { counter:'creative-writing-sessions',target:50 },
+  'sp-the-storyteller':        { counter:'creative-writing-sessions',target:100 },
+  'sp-the-student':            { counter:'creative-classes',        target:10 },
+  'sp-the-public-voice':       { counter:'published-count',         target:15 },
+  'sp-the-contender':          { counter:'competitions-entered',    target:5 },
+  'sp-the-persistent':         { counter:'competitions-entered',    target:15 },
+  'sp-the-collaborator':       { counter:'collaborations',          target:10 },
+  'sp-the-carer':              { counter:'dog-walks',               target:100 },
+  'sp-the-morning-guardian':   { counter:'no-phone-morning-streak', target:30 },
+  'sp-the-night-keeper':       { counter:'digital-sunset-streak',   target:30 },
+  'sp-the-willful':            { counter:'temptation-streak',       target:30 },
+  'sp-the-disciplined':        { counter:'temptation-streak',       target:100 },
+  'sp-the-transformed':        { counter:'habit-avoided-streak',    target:90 },
+  'sp-the-reclaimed':          { counter:'habit-avoided-streak',    target:365 },
+  'sp-the-clear':              { counter:'no-alcohol-streak',       target:30 },
+  'sp-the-sober':              { counter:'no-alcohol-streak',       target:90 },
+  'sp-the-lucid':              { counter:'no-alcohol-streak',       target:365 },
+  'sp-the-nourished':          { counter:'no-junk-streak',          target:30 },
+  'sp-the-clean':              { counter:'no-junk-streak',          target:90 },
+  'sp-the-rested':             { counter:'sleep-streak',            target:30 },
+  'sp-the-restored':           { counter:'sleep-streak',            target:90 },
+  'sp-the-unstoppable':        { counter:'goals-streak',            target:100 },
+  'sp-the-focused':            { counter:'watch-budget-streak',     target:30 },
+};
+
 // Map overall level → callsign/icon unlock keys
 const LEVEL_CALLSIGNS = [
   [1,'lv-callsign-the-lost'],[3,'lv-callsign-wanderer'],[5,'lv-callsign-apprentice'],
@@ -2024,6 +2141,7 @@ function renderCharacter() {
     const tier   = statTier(slv);
     const row = document.createElement('div');
     row.className = 'char-stat-row';
+    row.dataset.stat = stat;
     row.innerHTML = `
       <div class="char-stat-icon-wrap" style="border-color:${m.color}">
         <img class="char-stat-icon-img" src="stat-icon-${stat}-${tier}.png" alt="${m.name}">
@@ -2037,6 +2155,7 @@ function renderCharacter() {
           <div class="char-stat-bar-fill" style="width:${sp}%;background:${m.color}"></div>
         </div>
       </div>`;
+    row.addEventListener('click', () => openLogForStat(stat));
     panel.appendChild(row);
   });
 }
@@ -2115,14 +2234,77 @@ function renderVault(tab) {
   document.querySelectorAll('.vault-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.vaultTab === tab));
 
+  const grid = document.getElementById('vault-grid');
+
+  if (tab === 'skilltree') {
+    const lv = getLevels();
+    const TIER_LEVELS = [[1,10],[11,20],[21,30],[31,40],[41,50]];
+    grid.style.display = 'block';
+    grid.style.padding = '16px';
+    grid.innerHTML = STATS.map(stat => {
+      const m = STAT_META[stat];
+      const slv = lv[stat] || 1;
+      const tiers = TIER_LEVELS.map(([minLv, maxLv], i) => {
+        const tierNum = i + 1;
+        const unlocked = slv >= minLv;
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:${unlocked ? '1' : '0.45'};position:relative">
+          <div style="width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid ${unlocked ? m.color : 'var(--border)'};background:var(--card-2);position:relative">
+            <img src="stat-icon-${stat}-${tierNum}.png" style="width:100%;height:100%;object-fit:cover" onerror="this.style.opacity='0.2'">
+            ${!unlocked ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem">🔒</div>' : ''}
+          </div>
+          <div style="font-size:0.58rem;color:var(--muted);text-align:center;line-height:1.2">Lv ${minLv}–${maxLv}</div>
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:20px">
+        <div style="font-family:var(--font-display);font-size:0.9rem;color:${m.color};margin-bottom:10px;letter-spacing:0.04em">${m.name}</div>
+        <div style="display:flex;gap:10px;align-items:flex-start">${tiers}</div>
+        <div style="font-size:0.62rem;color:var(--muted);font-style:italic;margin-top:6px">Auto-equipped based on your level</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  grid.style.display = '';
+  grid.style.padding = '';
+
   const items    = CATALOG[tab] || [];
-  const grid     = document.getElementById('vault-grid');
   const catKey   = tab === 'callsigns' ? K.callsign : tab === 'icons' ? K.icon : K.prestige;
   const equipped = localStorage.getItem(catKey) || (tab === 'callsigns' ? 'callsign-wanderer.png' : tab === 'icons' ? 'icon-default.png' : '');
+  const counters = getCounters();
+  const ovl      = overallLevel();
 
   grid.innerHTML = items.map(item => {
     const unlocked   = isUnlocked(item);
     const isEquipped = equipped === item.file;
+
+    let progressHtml = '';
+    if (!unlocked) {
+      const pm = PROGRESS_MAP[item.unlockKey];
+      if (pm) {
+        const cur = counters[pm.counter] || 0;
+        const pct = Math.min(100, Math.round(cur / pm.target * 100));
+        progressHtml = `
+          <div style="width:100%;margin-top:4px">
+            <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:#c9a84c;border-radius:2px"></div>
+            </div>
+            <div style="font-size:0.58rem;color:var(--muted);text-align:center;margin-top:2px">${cur}/${pm.target}</div>
+          </div>`;
+      } else if (item.unlockKey && item.unlockKey.startsWith('lv-')) {
+        const reqLv = parseInt(item.cond.replace(/\D/g,'')) || 0;
+        if (reqLv > 0) {
+          const pct = Math.min(100, Math.round(ovl / reqLv * 100));
+          progressHtml = `
+            <div style="width:100%;margin-top:4px">
+              <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:#c9a84c;border-radius:2px"></div>
+              </div>
+              <div style="font-size:0.58rem;color:var(--muted);text-align:center;margin-top:2px">Lv ${ovl}/${reqLv}</div>
+            </div>`;
+        }
+      }
+    }
+
     return `<div class="vault-card${isEquipped ? ' equipped' : ''}${!unlocked ? ' locked' : ''}"
                  data-file="${item.file}" data-cat="${catKey}" title="${!unlocked ? item.cond : ''}">
       ${isEquipped ? '<span class="vault-equip-tick">✓</span>' : ''}
@@ -2130,7 +2312,7 @@ function renderVault(tab) {
       <img class="vault-card-img" src="${item.file}" alt="${item.name}"
            onerror="this.style.background='#1a1020';this.style.opacity='0.3';this.src=''">
       <div class="vault-card-name">${item.name}</div>
-      ${!unlocked ? `<div class="vault-lock-info">${item.cond}</div>` : ''}
+      ${!unlocked ? `<div class="vault-lock-info">${item.cond}</div>${progressHtml}` : ''}
     </div>`;
   }).join('');
 
@@ -2160,6 +2342,15 @@ function openLog() {
   const body = document.getElementById('log-body');
   body.innerHTML = '';
   renderLogStep1(body);
+}
+
+// Open log pre-selected on a stat (skip step 1)
+function openLogForStat(stat) {
+  _logStat = stat;
+  switchTab('log');
+  const body = document.getElementById('log-body');
+  body.innerHTML = '';
+  renderLogStep2(body);
 }
 
 // ── Step 1: Stat picker ──
