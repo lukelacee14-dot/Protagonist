@@ -572,23 +572,23 @@
       gap: 10px;
     }
 
-    /* ── Stats scroll tab (right edge trigger) ── */
+    /* ── Stats scroll tab (left edge trigger) ── */
     #stats-tab {
       position: fixed;
-      right: 0;
+      left: 0;
       top: 50%;
       transform: translateY(-50%);
       z-index: 200;
       width: 22px;
       height: 64px;
       background: #c9a84c;
-      border-radius: 4px 0 0 4px;
+      border-radius: 0 4px 4px 0;
       display: none;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      box-shadow: -2px 0 8px rgba(0,0,0,0.5);
+      box-shadow: 2px 0 8px rgba(0,0,0,0.5);
       transition: background 0.15s;
     }
     #stats-tab.visible { display: flex; }
@@ -618,30 +618,30 @@
 
     /* ── Stats scroll panel ── */
     @keyframes scrollUnfurl {
-      from { transform: scaleX(0.04); opacity: 0.2; }
-      to   { transform: scaleX(1);    opacity: 1; }
+      from { transform: translateX(-100%); opacity: 0.2; }
+      to   { transform: translateX(0);     opacity: 1; }
     }
     @keyframes scrollFurl {
-      from { transform: scaleX(1);    opacity: 1; }
-      to   { transform: scaleX(0.04); opacity: 0; }
+      from { transform: translateX(0);     opacity: 1; }
+      to   { transform: translateX(-100%); opacity: 0; }
     }
 
     #stats-scroll-panel {
       position: fixed;
-      right: 0;
+      left: 0;
       top: 0;
       bottom: var(--nav-h);
       width: 82%;
       max-width: 340px;
       background: #1a1208;
-      border-left: 2px solid #c9a84c;
+      border-right: 2px solid #c9a84c;
       z-index: 199;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      transform-origin: right center;
+      transform-origin: left center;
       /* hidden state */
-      transform: scaleX(0.04);
+      transform: translateX(-100%);
       opacity: 0;
       pointer-events: none;
       transition: none;
@@ -1464,9 +1464,9 @@
 
       </div><!-- /char-scroll -->
 
-      <!-- Stats scroll tab trigger (right edge) -->
+      <!-- Stats scroll tab trigger (left edge) -->
       <div id="stats-tab">
-        <span id="stats-tab-arrow">◀</span>
+        <span id="stats-tab-arrow">▶</span>
       </div>
 
       <!-- Stats scroll overlay -->
