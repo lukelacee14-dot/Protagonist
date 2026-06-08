@@ -1344,8 +1344,7 @@ function todayStr() { return new Date().toISOString().slice(0,10); }
    XP + LEVELLING
 ═══════════════════════════════════════════ */
 function overallLevel() {
-  const lv = getLevels();
-  return Math.max(1, Math.floor(STATS.reduce((s,k) => s + lv[k], 0) / STATS.length));
+  return getLevels().overall || 1;
 }
 
 function statTier(level) {
@@ -1359,6 +1358,8 @@ function statTier(level) {
 function addXP(stat, baseXP) {
   const xpData = getXP();
   const lvData = getLevels();
+
+  // ── Stat XP (unchanged) ──
   let xp = xpData[stat] + baseXP;
   let lv = lvData[stat];
   let levelsGained = 0;
@@ -1368,16 +1369,28 @@ function addXP(stat, baseXP) {
   }
   if (lv >= MAX_LEVEL) { lv = MAX_LEVEL; }
   xpData[stat] = xp;
-  lvData[stat] = lv;
-  // recalc overall
-  const newOverall = Math.max(1, Math.floor(STATS.reduce((s,k) => s + lvData[k], 0) / STATS.length));
-  const oldOverall = lvData.overall;
-  lvData.overall = newOverall;
+  lvData[stat]  = lv;
+
+  // ── Overall XP: 2× the stat award, separate pool ──
+  let ovlXP = (xpData.overall || 0) + baseXP * 2;
+  let ovlLv  = lvData.overall || 1;
+  let ovlLevelsGained = 0;
+  while (ovlLv < MAX_LEVEL) {
+    const needed = xpForLevel(ovlLv);
+    if (ovlXP >= needed) { ovlXP -= needed; ovlLv++; ovlLevelsGained++; } else break;
+  }
+  if (ovlLv >= MAX_LEVEL) { ovlLv = MAX_LEVEL; }
+  xpData.overall = ovlXP;
+  const oldOverall = lvData.overall || 1;
+  lvData.overall   = ovlLv;
+
   save(K.xp, xpData);
   save(K.level, lvData);
-  if (levelsGained > 0) showLevelUpToast(STAT_META[stat].name, lv);
-  if (newOverall > oldOverall) showLevelUpToast('Overall', newOverall);
-  return { xp, lv, levelsGained, newOverall };
+
+  if (levelsGained > 0)     showLevelUpToast(STAT_META[stat].name, lv);
+  if (ovlLv > oldOverall)   showLevelUpToast('Overall', ovlLv);
+
+  return { xp, lv, levelsGained, newOverall: ovlLv };
 }
 
 /* ═══════════════════════════════════════════
@@ -2394,10 +2407,10 @@ function renderCharacter() {
 
   // Overall XP bar (avg of all stats)
   const needed = xpForLevel(ovl);
-  const avgXP  = Math.round(STATS.reduce((s,k) => s + xp[k], 0) / STATS.length);
-  const pct    = Math.min(100, needed > 0 ? avgXP / needed * 100 : 0);
+  const ovlXP  = xp.overall || 0;
+  const pct    = Math.min(100, needed > 0 ? ovlXP / needed * 100 : 0);
   document.getElementById('char-xp-bar-fill').style.width = pct + '%';
-  document.getElementById('char-xp-label-right').textContent = avgXP + ' / ' + needed + ' XP';
+  document.getElementById('char-xp-label-right').textContent = ovlXP + ' / ' + needed + ' XP';
 
   // Stat rows
   const panel = document.getElementById('char-stats-panel');
@@ -2980,6 +2993,12 @@ function initApp() {
     u['lv-icon-default']      = true;
     u['lv-callsign-wanderer'] = true;
     save(K.unlocks, u);
+  }
+  // Seed overall level/xp for existing users who have stat levels but no overall pool yet
+  const lvData = getLevels();
+  if (!lvData.overall || lvData.overall < 1) {
+    lvData.overall = Math.max(1, Math.floor(STATS.reduce((s,k) => s + (lvData[k]||1), 0) / STATS.length));
+    save(K.level, lvData);
   }
 
   // Run unlock checks and render the character screen immediately
