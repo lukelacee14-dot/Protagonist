@@ -412,15 +412,7 @@
     }
 
     .char-bg-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        to bottom,
-        rgba(8,6,8,0.55) 0%,
-        rgba(8,6,8,0.82) 45%,
-        rgba(8,6,8,0.97) 100%
-      );
-      z-index: 1;
+      display: none;
     }
 
     /* scrollable content sits above bg */
@@ -563,155 +555,13 @@
       pointer-events: none;
     }
 
-    /* ── Stats panel ── */
-    /* ── Stats panel (lives inside the scroll, not in char-scroll flow) ── */
+    /* ── Stats panel (inline on character screen) ── */
     .char-stats-panel {
       width: 100%;
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
-
-    /* ── Stats scroll tab (left edge trigger) ── */
-    #stats-tab {
-      position: fixed;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 200;
-      width: 22px;
-      height: 64px;
-      background: #c9a84c;
-      border-radius: 0 4px 4px 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.5);
-      transition: background 0.15s;
-    }
-    #stats-tab.visible { display: flex; }
-    #stats-tab:active  { background: #e8c060; }
-
-    #stats-tab-arrow {
-      font-size: 0.7rem;
-      color: #0a0810;
-      transition: transform 0.4s ease;
-      line-height: 1;
-    }
-    #stats-tab-arrow.open { transform: rotate(180deg); }
-
-    /* ── Stats overlay ── */
-    #stats-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 198;
-      background: rgba(0,0,0,0);
-      pointer-events: none;
-      transition: background 0.4s ease;
-    }
-    #stats-overlay.open {
-      background: rgba(0,0,0,0.4);
-      pointer-events: auto;
-    }
-
-    /* ── Stats scroll panel ── */
-    @keyframes scrollUnfurl {
-      from { transform: translateX(-100%); opacity: 0.2; }
-      to   { transform: translateX(0);     opacity: 1; }
-    }
-    @keyframes scrollFurl {
-      from { transform: translateX(0);     opacity: 1; }
-      to   { transform: translateX(-100%); opacity: 0; }
-    }
-
-    #stats-scroll-panel {
-      position: fixed;
-      left: 0;
-      top: 0;
-      bottom: var(--nav-h);
-      width: 82%;
-      max-width: 340px;
-      background: #1a1208;
-      border-right: 2px solid #c9a84c;
-      z-index: 199;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      transform-origin: left center;
-      /* hidden state */
-      transform: translateX(-100%);
-      opacity: 0;
-      pointer-events: none;
-      transition: none;
-    }
-    #stats-scroll-panel.open {
-      pointer-events: auto;
-      animation: scrollUnfurl 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-    #stats-scroll-panel.closing {
-      pointer-events: none;
-      animation: scrollFurl 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
-    }
-
-    /* parchment texture overlay */
-    #stats-scroll-panel::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 28px,
-          rgba(201,168,76,0.04) 28px,
-          rgba(201,168,76,0.04) 29px
-        );
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .stats-scroll-inner {
-      position: relative;
-      z-index: 1;
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 16px 14px 20px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .stats-scroll-title {
-      font-family: 'Fredoka One', cursive;
-      font-size: 1.1rem;
-      color: #c9a84c;
-      letter-spacing: 0.1em;
-      text-align: center;
-      margin-bottom: 16px;
-      text-shadow: 0 0 16px rgba(201,168,76,0.3);
-    }
-
-    .stats-scroll-end {
-      position: relative;
-      margin-top: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .stats-scroll-end::before,
-    .stats-scroll-end::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, #c9a84c88, transparent);
-    }
-    .stats-scroll-end-ornament {
-      font-size: 0.85rem;
-      color: #c9a84c;
-      padding: 0 8px;
-      opacity: 0.7;
+      margin-top: 14px;
     }
 
     .char-stat-row {
@@ -1462,26 +1312,10 @@
           </div>
         </div>
 
+        <!-- Stat rows -->
+        <div class="char-stats-panel" id="char-stats-panel"></div>
+
       </div><!-- /char-scroll -->
-
-      <!-- Stats scroll tab trigger (left edge) -->
-      <div id="stats-tab">
-        <span id="stats-tab-arrow">▶</span>
-      </div>
-
-      <!-- Stats scroll overlay -->
-      <div id="stats-overlay"></div>
-
-      <!-- Stats scroll panel -->
-      <div id="stats-scroll-panel">
-        <div class="stats-scroll-inner">
-          <div class="stats-scroll-title">YOUR STATS</div>
-          <div class="char-stats-panel" id="char-stats-panel"></div>
-          <div class="stats-scroll-end">
-            <span class="stats-scroll-end-ornament">✦</span>
-          </div>
-        </div>
-      </div>
 
       <!-- Pull-out tab trigger -->
       <div id="challenges-tab">
@@ -2910,40 +2744,6 @@ document.getElementById('challenges-tab').addEventListener('click', () => {
 document.getElementById('challenges-close').addEventListener('click', closeChallengesPanel);
 document.getElementById('challenges-overlay').addEventListener('click', closeChallengesPanel);
 
-/* ═══════════════════════════════════════════
-   STATS SCROLL PANEL
-═══════════════════════════════════════════ */
-let _statsScrollOpen = false;
-
-function openStatsScroll() {
-  if (_statsScrollOpen) return;
-  _statsScrollOpen = true;
-  renderCharacter(); // refresh stats before showing
-  const panel = document.getElementById('stats-scroll-panel');
-  panel.classList.remove('closing');
-  panel.classList.add('open');
-  document.getElementById('stats-overlay').classList.add('open');
-  document.getElementById('stats-tab-arrow').classList.add('open');
-}
-
-function closeStatsScroll() {
-  if (!_statsScrollOpen) return;
-  _statsScrollOpen = false;
-  const panel = document.getElementById('stats-scroll-panel');
-  panel.classList.remove('open');
-  panel.classList.add('closing');
-  document.getElementById('stats-overlay').classList.remove('open');
-  document.getElementById('stats-tab-arrow').classList.remove('open');
-  // clean up closing class after animation finishes
-  panel.addEventListener('animationend', () => {
-    panel.classList.remove('closing');
-  }, { once: true });
-}
-
-document.getElementById('stats-tab').addEventListener('click', () => {
-  _statsScrollOpen ? closeStatsScroll() : openStatsScroll();
-});
-document.getElementById('stats-overlay').addEventListener('click', closeStatsScroll);
 
 /* ═══════════════════════════════════════════
    BLACKSMITH
@@ -4134,15 +3934,11 @@ function switchTab(tab) {
   if (tab === 'vault')      renderVault(_vaultTab);
   if (tab === 'blacksmith') renderBlacksmith();
   const challengesTab = document.getElementById('challenges-tab');
-  const statsTab      = document.getElementById('stats-tab');
   if (tab === 'character') {
     challengesTab.classList.add('visible');
-    statsTab.classList.add('visible');
   } else {
     challengesTab.classList.remove('visible');
     closeChallengesPanel();
-    statsTab.classList.remove('visible');
-    closeStatsScroll();
   }
 }
 
