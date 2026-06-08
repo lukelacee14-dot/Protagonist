@@ -946,6 +946,295 @@
     }
 
     /* ═══════════════════════════════════════════
+       BLACKSMITH SCREEN
+    ═══════════════════════════════════════════ */
+    #screen-blacksmith {
+      background: var(--bg);
+    }
+
+    .bs-body {
+      padding: 16px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .bs-stat-section {
+      margin-bottom: 26px;
+    }
+
+    .bs-stat-heading {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bs-stat-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: currentColor;
+      opacity: 0.18;
+    }
+
+    .bs-tool-card {
+      background: #0d0b10;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .bs-tool-card.unlocked {
+      background: #100e14;
+    }
+
+    .bs-tool-card-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+
+    .bs-tool-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bs-tool-card-name {
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      letter-spacing: 0.03em;
+      margin-bottom: 3px;
+    }
+
+    .bs-tool-card.locked .bs-tool-card-name {
+      color: var(--muted);
+    }
+
+    .bs-tool-card-desc {
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .bs-tool-card-lv {
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      opacity: 0.6;
+      margin-top: 2px;
+    }
+
+    .bs-tool-card-right {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bs-open-btn {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: #0a0810;
+      background: #c9a84c;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .bs-open-btn:active { opacity: 0.75; }
+
+    /* ── Tool panel overlay ── */
+    #bs-tool-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      background: #0a0810;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #bs-tool-panel.open {
+      transform: translateY(0);
+    }
+
+    #bs-tool-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 52px 18px 14px;
+      border-bottom: 1px solid var(--gold-dim);
+      flex-shrink: 0;
+    }
+
+    #bs-tool-panel-title {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      color: var(--gold-bright);
+      letter-spacing: 0.04em;
+    }
+
+    #bs-tool-close {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #bs-tool-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 16px 32px;
+    }
+
+    /* ── Shared tool UI pieces ── */
+    .bs-tool-section-title {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .bs-add-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .bs-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      padding: 9px 12px;
+      outline: none;
+    }
+    .bs-input:focus { border-color: var(--gold-dim); }
+
+    .bs-add-btn {
+      background: var(--gold);
+      color: #0a0810;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      padding: 9px 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bs-list-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .bs-list-item-body { flex: 1; min-width: 0; }
+
+    .bs-list-item-name {
+      font-size: 0.84rem;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .bs-list-item-meta {
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .bs-del-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 2px;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bs-status-chip {
+      display: inline-block;
+      font-size: 0.58rem;
+      font-family: var(--font-display);
+      letter-spacing: 0.06em;
+      padding: 2px 7px;
+      border-radius: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* streak calendar */
+    .bs-streak-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+      margin-bottom: 16px;
+    }
+
+    .bs-streak-cell {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      background: #1a1520;
+    }
+
+    .bs-streak-cell.active { background: #c9a84c; }
+    .bs-streak-cell.today  { outline: 1px solid #c9a84c; }
+
+    .bs-coming-soon {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .bs-coming-soon-icon { font-size: 2.2rem; margin-bottom: 10px; }
+
+    .bs-coming-soon-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .bs-coming-soon-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════
        CODEX SCREEN
     ═══════════════════════════════════════════ */
     #screen-codex {
@@ -1304,7 +1593,25 @@
       </div><!-- /codex-body -->
     </div><!-- /screen-codex -->
 
+    <!-- ── BLACKSMITH SCREEN ── -->
+    <div id="screen-blacksmith" class="screen">
+      <div class="screen-header">
+        <div class="screen-title">The Blacksmith</div>
+        <div class="screen-sub">Tools forged through your progress</div>
+      </div>
+      <div class="bs-body" id="bs-body"></div>
+    </div>
+
   </div><!-- /screen-wrap -->
+
+  <!-- ── BLACKSMITH TOOL PANEL ── -->
+  <div id="bs-tool-panel">
+    <div id="bs-tool-panel-header">
+      <span id="bs-tool-panel-title">Tool</span>
+      <button id="bs-tool-close">✕ Close</button>
+    </div>
+    <div id="bs-tool-body"></div>
+  </div>
 
   <!-- ═══════════════════════════════════════
        BOTTOM NAVIGATION
@@ -1325,6 +1632,10 @@
     <button class="nav-tab" data-tab="codex">
       <span class="nav-icon">📖</span>
       <span class="nav-label">Codex</span>
+    </button>
+    <button class="nav-tab" data-tab="blacksmith">
+      <span class="nav-icon">⚒️</span>
+      <span class="nav-label">Blacksmith</span>
     </button>
   </nav>
 
@@ -1469,6 +1780,16 @@ function markLogged(stat, actName) {
   const l = getLogs();
   l[stat + '::' + actName] = todayStr();
   save(K.logs, l);
+  // write to activity history for streak calendar (cap at 500 entries)
+  try {
+    const hist = JSON.parse(localStorage.getItem('bs_act_history') || '[]');
+    const today = todayStr();
+    if (!hist.find(e => e.stat === stat && e.date === today)) {
+      hist.push({ stat, date: today });
+      if (hist.length > 500) hist.splice(0, hist.length - 500);
+      localStorage.setItem('bs_act_history', JSON.stringify(hist));
+    }
+  } catch(e) {}
 }
 
 /* ═══════════════════════════════════════════
@@ -2625,6 +2946,432 @@ document.getElementById('stats-tab').addEventListener('click', () => {
 document.getElementById('stats-overlay').addEventListener('click', closeStatsScroll);
 
 /* ═══════════════════════════════════════════
+   BLACKSMITH
+═══════════════════════════════════════════ */
+const BLACKSMITH_TOOLS = {
+  strength: {
+    color: '#e05c5c',
+    icon: '💪',
+    tools: [
+      { level:5,  id:'workout-logger',   name:'Workout Logger',        desc:'Log sets, reps and weights for every session',                       functional:true  },
+      { level:10, id:'body-metrics',     name:'Body Metrics',          desc:'Track weight and measurements over time with a chart',               functional:false },
+      { level:20, id:'training-split',   name:'Training Split Planner',desc:'Build a personalised workout plan',                                  functional:false },
+      { level:35, id:'perf-analytics',   name:'Performance Analytics', desc:'Personal bests, strength trends and progress charts',                functional:false },
+      { level:50, id:'elite-coach',      name:'Elite Coach Mode',      desc:'Claude reviews your logs and gives weekly training advice',          functional:false },
+    ],
+  },
+  wisdom: {
+    color: '#6b9fff',
+    icon: '📚',
+    tools: [
+      { level:5,  id:'reading-list',     name:'Reading List',          desc:'Track books to read, currently reading and finished',                functional:true  },
+      { level:10, id:'book-notes',       name:'Book Notes',            desc:'After logging a book Claude saves key insights to your dashboard',   functional:false },
+      { level:20, id:'study-planner',    name:'Study Planner',         desc:'Build a study schedule for any topic or exam',                       functional:false },
+      { level:35, id:'knowledge-map',    name:'Knowledge Map',         desc:'Visual web of everything you have studied and how topics connect',   functional:false },
+      { level:50, id:'deep-research',    name:'Deep Research Mode',    desc:'Claude becomes a dedicated research assistant for any topic',        functional:false },
+    ],
+  },
+  discipline: {
+    color: '#a78bfa',
+    icon: '🗓️',
+    tools: [
+      { level:5,  id:'streak-calendar',  name:'Streak Calendar',       desc:'Visual heatmap of your consistency across all activities',           functional:true  },
+      { level:10, id:'morning-routine',  name:'Morning Routine Builder',desc:'Build and track a daily morning routine',                           functional:false },
+      { level:20, id:'habit-stacking',   name:'Habit Stacking',        desc:'Chain habits together so completing one unlocks the next',           functional:false },
+      { level:35, id:'life-audit',       name:'Life Audit Tool',       desc:'Quarterly review of all stats and goals with Claude',               functional:false },
+      { level:50, id:'iron-will',        name:'Iron Will Mode',        desc:'Stricter verification and higher XP rewards for hardcore mode',      functional:false },
+    ],
+  },
+  charisma: {
+    color: '#f472b6',
+    icon: '🤝',
+    tools: [
+      { level:5,  id:'connection-tracker',name:'Connection Tracker',   desc:'Log people you want to stay in touch with and when you last spoke',  functional:true  },
+      { level:10, id:'convo-journal',    name:'Conversation Journal',  desc:'Log meaningful conversations and what you learned',                  functional:false },
+      { level:20, id:'social-goals',     name:'Social Goals',          desc:'Set monthly targets for who you want to see or reconnect with',      functional:false },
+      { level:35, id:'relationship-map', name:'Relationship Map',      desc:'Visual web of your key relationships and connection strength',       functional:false },
+      { level:50, id:'life-coach',       name:'Life Coach Mode',       desc:'Claude helps you navigate difficult conversations and relationships', functional:false },
+    ],
+  },
+  creativity: {
+    color: '#34d399',
+    icon: '🎨',
+    tools: [
+      { level:5,  id:'project-tracker',  name:'Project Tracker',       desc:'Log active creative projects with progress and deadlines',           functional:true  },
+      { level:10, id:'inspo-board',      name:'Inspiration Board',     desc:'Save images, links and ideas for creative projects',                 functional:false },
+      { level:20, id:'skill-roadmap',    name:'Skill Roadmap',         desc:'Claude maps out a learning path for any creative skill',             functional:false },
+      { level:35, id:'portfolio-log',    name:'Portfolio Log',         desc:'Archive of everything you have made with dates and reflections',     functional:false },
+      { level:50, id:'creative-director',name:'Creative Director Mode',desc:'Claude acts as a creative collaborator on any project',              functional:false },
+    ],
+  },
+};
+
+function renderBlacksmith() {
+  const body = document.getElementById('bs-body');
+  const lv   = getLevels();
+  body.innerHTML = Object.entries(BLACKSMITH_TOOLS).map(([stat, data]) => {
+    const statLv = lv[stat] || 1;
+    const cards  = data.tools.map(tool => {
+      const unlocked = statLv >= tool.level;
+      const glowStyle = unlocked
+        ? `border-color:${data.color}44; box-shadow: 0 0 10px ${data.color}22;`
+        : '';
+      return `<div class="bs-tool-card ${unlocked ? 'unlocked' : 'locked'}" style="${glowStyle}">
+        <div class="bs-tool-card-icon">${unlocked ? data.icon : '🔒'}</div>
+        <div class="bs-tool-card-body">
+          <div class="bs-tool-card-name" style="${unlocked ? 'color:'+data.color : ''}">${tool.name}</div>
+          <div class="bs-tool-card-desc">${tool.desc}</div>
+          <div class="bs-tool-card-lv" style="${unlocked ? 'color:'+data.color : ''}">
+            ${unlocked ? '✓ Unlocked at Lv '+tool.level : 'Requires '+STAT_META[stat].name+' Lv '+tool.level}
+          </div>
+        </div>
+        ${unlocked ? `<div class="bs-tool-card-right">
+          <button class="bs-open-btn" data-tool="${tool.id}" data-stat="${stat}" style="background:${data.color}">OPEN</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="bs-stat-section">
+      <div class="bs-stat-heading" style="color:${data.color}">${STAT_META[stat].name}</div>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  // wire OPEN buttons
+  body.querySelectorAll('.bs-open-btn').forEach(btn => {
+    btn.addEventListener('click', () => openTool(btn.dataset.tool, btn.dataset.stat));
+  });
+}
+
+/* ── Tool panel ── */
+function openTool(toolId, stat) {
+  const data = BLACKSMITH_TOOLS[stat];
+  const tool = data.tools.find(t => t.id === toolId);
+  document.getElementById('bs-tool-panel-title').textContent = tool.name;
+  document.getElementById('bs-tool-panel-title').style.color = data.color;
+  const body = document.getElementById('bs-tool-body');
+  body.innerHTML = '';
+
+  if (toolId === 'reading-list')       renderReadingList(body, data.color);
+  else if (toolId === 'streak-calendar') renderStreakCalendar(body, data.color);
+  else if (toolId === 'connection-tracker') renderConnectionTracker(body, data.color);
+  else if (toolId === 'project-tracker')   renderProjectTracker(body, data.color);
+  else if (toolId === 'workout-logger')    renderWorkoutLogger(body, data.color);
+  else renderComingSoon(body, tool.name, tool.desc);
+
+  document.getElementById('bs-tool-panel').classList.add('open');
+}
+
+document.getElementById('bs-tool-close').addEventListener('click', () => {
+  document.getElementById('bs-tool-panel').classList.remove('open');
+});
+
+/* ── Coming Soon placeholder ── */
+function renderComingSoon(body, name, desc) {
+  body.innerHTML = `
+    <div class="bs-coming-soon">
+      <div class="bs-coming-soon-icon">⚒️</div>
+      <div class="bs-coming-soon-title">${name}</div>
+      <div class="bs-coming-soon-text">${desc}.<br><br>This tool is being forged. Check back as you level up — the most powerful tools unlock at higher levels.</div>
+    </div>`;
+}
+
+/* ── Reading List ── */
+function bsLoad(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch(e) { return fallback; } }
+function bsSave(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+const STATUS_LABELS = { 'to-read':'To Read', 'reading':'Reading', 'finished':'Finished' };
+const STATUS_NEXT   = { 'to-read':'reading', 'reading':'finished', 'finished':'to-read' };
+const STATUS_COLORS = { 'to-read':'#6e5f44', 'reading':'#6b9fff', 'finished':'#34d399' };
+
+function renderReadingList(body, color) {
+  const items = bsLoad('bs_reading_list', []);
+  body.innerHTML = `
+    <div class="bs-tool-section-title" style="color:${color}">Add a Book</div>
+    <div class="bs-add-row">
+      <input class="bs-input" id="rl-title" placeholder="Title" />
+      <input class="bs-input" id="rl-author" placeholder="Author" style="max-width:120px" />
+      <button class="bs-add-btn" id="rl-add" style="background:${color}">Add</button>
+    </div>
+    <div class="bs-tool-section-title" style="color:${color};margin-top:4px">Your Books (${items.length})</div>
+    <div id="rl-list"></div>`;
+
+  function rerender() {
+    const list = bsLoad('bs_reading_list', []);
+    const html = list.length === 0
+      ? `<div style="color:var(--muted);font-size:0.78rem;font-style:italic;padding:8px 0">No books yet — add your first one above.</div>`
+      : list.map(item => `
+        <div class="bs-list-item">
+          <div class="bs-list-item-body">
+            <div class="bs-list-item-name">${item.title}</div>
+            <div class="bs-list-item-meta">${item.author || 'Unknown author'}</div>
+            <span class="bs-status-chip" data-id="${item.id}"
+              style="background:${STATUS_COLORS[item.status]}22;color:${STATUS_COLORS[item.status]};border:1px solid ${STATUS_COLORS[item.status]}44;margin-top:4px">
+              ${STATUS_LABELS[item.status]}
+            </span>
+          </div>
+          <button class="bs-del-btn" data-del="${item.id}">✕</button>
+        </div>`).join('');
+    document.getElementById('rl-list').innerHTML = html;
+    document.querySelectorAll('.bs-status-chip[data-id]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const d = bsLoad('bs_reading_list', []);
+        const entry = d.find(x => x.id === chip.dataset.id);
+        if (entry) { entry.status = STATUS_NEXT[entry.status]; bsSave('bs_reading_list', d); rerender(); }
+      });
+    });
+    document.querySelectorAll('.bs-del-btn[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('bs_reading_list', []).filter(x => x.id !== btn.dataset.del);
+        bsSave('bs_reading_list', d); rerender();
+        document.querySelector('.bs-tool-section-title:last-of-type').textContent = 'Your Books (' + d.length + ')';
+      });
+    });
+  }
+  rerender();
+  document.getElementById('rl-add').addEventListener('click', () => {
+    const title  = document.getElementById('rl-title').value.trim();
+    const author = document.getElementById('rl-author').value.trim();
+    if (!title) return;
+    const list = bsLoad('bs_reading_list', []);
+    list.unshift({ id: Date.now().toString(), title, author, status:'to-read' });
+    bsSave('bs_reading_list', list);
+    document.getElementById('rl-title').value = '';
+    document.getElementById('rl-author').value = '';
+    rerender();
+  });
+}
+
+/* ── Streak Calendar ── */
+function renderStreakCalendar(body, color) {
+  const hist  = bsLoad('bs_act_history', []);
+  const today = todayStr();
+  // build set of dates for last 70 days per stat
+  const days = 70;
+  const dates = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  const sections = STATS.map(stat => {
+    const m = STAT_META[stat];
+    const activeDates = new Set(hist.filter(e => e.stat === stat).map(e => e.date));
+    const cells = dates.map(d => {
+      const isToday = d === today;
+      const active  = activeDates.has(d);
+      return `<div class="bs-streak-cell${active ? ' active' : ''}${isToday ? ' today' : ''}"
+        style="${active ? 'background:'+m.color+'cc' : ''}"
+        title="${d}"></div>`;
+    }).join('');
+    const streak = (function() {
+      let s = 0, cur = new Date();
+      while (true) {
+        const ds = cur.toISOString().slice(0,10);
+        if (!activeDates.has(ds)) break;
+        s++; cur.setDate(cur.getDate() - 1);
+      }
+      return s;
+    })();
+    return `<div style="margin-bottom:18px">
+      <div style="font-family:var(--font-display);font-size:0.78rem;color:${m.color};margin-bottom:6px;letter-spacing:0.04em">
+        ${m.name} <span style="color:var(--muted);font-size:0.62rem">— ${streak} day streak</span>
+      </div>
+      <div class="bs-streak-grid">${cells}</div>
+    </div>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="bs-tool-section-title" style="color:${color}">Last 70 Days</div>
+    <div style="font-size:0.68rem;color:var(--muted);margin-bottom:14px;font-style:italic">Each cell = one day. Tap a stat row on the Character screen to log and fill your calendar.</div>
+    ${sections}`;
+}
+
+/* ── Connection Tracker ── */
+function renderConnectionTracker(body, color) {
+  function rerender() {
+    const list = bsLoad('bs_connections', []);
+    body.innerHTML = `
+      <div class="bs-tool-section-title" style="color:${color}">Add Person</div>
+      <div class="bs-add-row">
+        <input class="bs-input" id="ct-name" placeholder="Name" />
+        <input class="bs-input" id="ct-rel" placeholder="e.g. Friend" style="max-width:100px" />
+        <button class="bs-add-btn" id="ct-add" style="background:${color}">Add</button>
+      </div>
+      <div class="bs-tool-section-title" style="color:${color};margin-top:4px">People (${list.length})</div>
+      <div id="ct-list">
+        ${list.length === 0
+          ? `<div style="color:var(--muted);font-size:0.78rem;font-style:italic;padding:8px 0">No connections yet.</div>`
+          : list.map(p => {
+              const since = p.lastContact
+                ? Math.round((Date.now() - new Date(p.lastContact)) / 86400000)
+                : null;
+              const sinceStr = since === null ? 'Never contacted'
+                : since === 0 ? 'Today'
+                : since === 1 ? 'Yesterday'
+                : since + ' days ago';
+              const urgency = since === null || since > 30 ? '#e05c5c' : since > 14 ? '#c9a84c' : '#34d399';
+              return `<div class="bs-list-item">
+                <div class="bs-list-item-body">
+                  <div class="bs-list-item-name">${p.name}</div>
+                  <div class="bs-list-item-meta">${p.relationship || ''}</div>
+                  <div style="font-size:0.68rem;color:${urgency};margin-top:2px">${sinceStr}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                  <button class="bs-del-btn" data-del="${p.id}">✕</button>
+                  <button class="bs-add-btn" data-touch="${p.id}" style="background:${color};font-size:0.58rem;padding:3px 8px">Spoke</button>
+                </div>
+              </div>`;
+            }).join('')}
+      </div>`;
+    document.getElementById('ct-add').addEventListener('click', () => {
+      const name = document.getElementById('ct-name').value.trim();
+      const rel  = document.getElementById('ct-rel').value.trim();
+      if (!name) return;
+      const d = bsLoad('bs_connections', []);
+      d.unshift({ id: Date.now().toString(), name, relationship: rel, lastContact: null });
+      bsSave('bs_connections', d);
+      rerender();
+    });
+    document.querySelectorAll('.bs-del-btn[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bsSave('bs_connections', bsLoad('bs_connections', []).filter(x => x.id !== btn.dataset.del));
+        rerender();
+      });
+    });
+    document.querySelectorAll('[data-touch]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = bsLoad('bs_connections', []);
+        const entry = d.find(x => x.id === btn.dataset.touch);
+        if (entry) { entry.lastContact = new Date().toISOString().slice(0,10); bsSave('bs_connections', d); rerender(); }
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Project Tracker ── */
+const PROJ_STATUS_LABELS = { 'active':'Active', 'paused':'Paused', 'complete':'Complete' };
+const PROJ_STATUS_NEXT   = { 'active':'paused', 'paused':'complete', 'complete':'active' };
+const PROJ_STATUS_COLORS = { 'active':'#34d399', 'paused':'#c9a84c', 'complete':'#6b9fff' };
+
+function renderProjectTracker(body, color) {
+  function rerender() {
+    const list = bsLoad('bs_projects', []);
+    body.innerHTML = `
+      <div class="bs-tool-section-title" style="color:${color}">New Project</div>
+      <div class="bs-add-row">
+        <input class="bs-input" id="pt-name" placeholder="Project name" />
+        <button class="bs-add-btn" id="pt-add" style="background:${color}">Add</button>
+      </div>
+      <div class="bs-tool-section-title" style="color:${color};margin-top:4px">Projects (${list.length})</div>
+      ${list.length === 0
+        ? `<div style="color:var(--muted);font-size:0.78rem;font-style:italic;padding:8px 0">No projects yet.</div>`
+        : list.map(p => `
+          <div class="bs-list-item" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <div class="bs-list-item-body">
+                <div class="bs-list-item-name">${p.name}</div>
+              </div>
+              <span class="bs-status-chip" data-pid="${p.id}"
+                style="background:${PROJ_STATUS_COLORS[p.status]}22;color:${PROJ_STATUS_COLORS[p.status]};border:1px solid ${PROJ_STATUS_COLORS[p.status]}44">
+                ${PROJ_STATUS_LABELS[p.status]}
+              </span>
+              <button class="bs-del-btn" data-del="${p.id}">✕</button>
+            </div>
+            <textarea class="bs-input" data-notes="${p.id}" placeholder="Notes…" rows="2"
+              style="width:100%;resize:none;font-size:0.78rem">${p.notes || ''}</textarea>
+          </div>`).join('')}`;
+    document.getElementById('pt-add').addEventListener('click', () => {
+      const name = document.getElementById('pt-name').value.trim();
+      if (!name) return;
+      const d = bsLoad('bs_projects', []);
+      d.unshift({ id: Date.now().toString(), name, status:'active', notes:'' });
+      bsSave('bs_projects', d); rerender();
+    });
+    document.querySelectorAll('.bs-status-chip[data-pid]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const d = bsLoad('bs_projects', []);
+        const entry = d.find(x => x.id === chip.dataset.pid);
+        if (entry) { entry.status = PROJ_STATUS_NEXT[entry.status]; bsSave('bs_projects', d); rerender(); }
+      });
+    });
+    document.querySelectorAll('textarea[data-notes]').forEach(ta => {
+      ta.addEventListener('change', () => {
+        const d = bsLoad('bs_projects', []);
+        const entry = d.find(x => x.id === ta.dataset.notes);
+        if (entry) { entry.notes = ta.value; bsSave('bs_projects', d); }
+      });
+    });
+    document.querySelectorAll('.bs-del-btn[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bsSave('bs_projects', bsLoad('bs_projects', []).filter(x => x.id !== btn.dataset.del));
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ── Workout Logger ── */
+function renderWorkoutLogger(body, color) {
+  const today = todayStr();
+  function rerender() {
+    const sessions = bsLoad('bs_workouts', []);
+    const todaySets = sessions.find(s => s.date === today) || { date: today, sets: [] };
+    const sets = todaySets.sets;
+    body.innerHTML = `
+      <div class="bs-tool-section-title" style="color:${color}">Today — ${today}</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <input class="bs-input" id="wl-exercise" placeholder="Exercise" style="flex:2;min-width:100px" />
+        <input class="bs-input" id="wl-sets" placeholder="Sets" style="width:52px" type="number" min="1" />
+        <input class="bs-input" id="wl-reps" placeholder="Reps" style="width:52px" type="number" min="1" />
+        <input class="bs-input" id="wl-weight" placeholder="kg" style="width:58px" type="number" min="0" step="0.5" />
+        <button class="bs-add-btn" id="wl-add" style="background:${color}">Add</button>
+      </div>
+      ${sets.length === 0
+        ? `<div style="color:var(--muted);font-size:0.78rem;font-style:italic;padding:4px 0">No sets logged today yet.</div>`
+        : sets.map((s, i) => `
+          <div class="bs-list-item">
+            <div class="bs-list-item-body">
+              <div class="bs-list-item-name">${s.exercise}</div>
+              <div class="bs-list-item-meta">${s.sets} sets × ${s.reps} reps${s.weight ? ' @ '+s.weight+'kg' : ''}</div>
+            </div>
+            <button class="bs-del-btn" data-wdel="${i}">✕</button>
+          </div>`).join('')}
+      ${sessions.filter(s => s.date !== today && s.sets.length > 0).slice(0,3).map(s => `
+        <div style="margin-top:14px">
+          <div class="bs-tool-section-title" style="color:${color};opacity:0.6">${s.date}</div>
+          ${s.sets.map(ex => `<div style="font-size:0.72rem;color:var(--muted);padding:2px 0">${ex.exercise} — ${ex.sets}×${ex.reps}${ex.weight?' @ '+ex.weight+'kg':''}</div>`).join('')}
+        </div>`).join('')}`;
+    document.getElementById('wl-add').addEventListener('click', () => {
+      const exercise = document.getElementById('wl-exercise').value.trim();
+      if (!exercise) return;
+      const sets  = parseInt(document.getElementById('wl-sets').value)  || 0;
+      const reps  = parseInt(document.getElementById('wl-reps').value)  || 0;
+      const weight= parseFloat(document.getElementById('wl-weight').value) || 0;
+      const all   = bsLoad('bs_workouts', []);
+      let entry   = all.find(s => s.date === today);
+      if (!entry) { entry = { date: today, sets: [] }; all.unshift(entry); }
+      entry.sets.push({ exercise, sets, reps, weight: weight || null });
+      if (all.length > 90) all.splice(90);
+      bsSave('bs_workouts', all);
+      document.getElementById('wl-exercise').value = '';
+      document.getElementById('wl-sets').value = '';
+      document.getElementById('wl-reps').value = '';
+      document.getElementById('wl-weight').value = '';
+      rerender();
+    });
+    document.querySelectorAll('[data-wdel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const all   = bsLoad('bs_workouts', []);
+        const entry = all.find(s => s.date === today);
+        if (entry) { entry.sets.splice(parseInt(btn.dataset.wdel), 1); bsSave('bs_workouts', all); }
+        rerender();
+      });
+    });
+  }
+  rerender();
+}
+
+/* ═══════════════════════════════════════════
    TOAST NOTIFICATIONS
 ═══════════════════════════════════════════ */
 function showLevelUpToast(statName, newLevel) {
@@ -2662,10 +3409,11 @@ function showNextUnlock() {
    BOTTOM NAVIGATION
 ═══════════════════════════════════════════ */
 const TAB_SCREENS = {
-  character: 'screen-character',
-  log:       'screen-log',
-  vault:     'screen-vault',
-  codex:     'screen-codex',
+  character:  'screen-character',
+  log:        'screen-log',
+  vault:      'screen-vault',
+  codex:      'screen-codex',
+  blacksmith: 'screen-blacksmith',
 };
 
 let _activeTab = 'character';
@@ -2681,7 +3429,8 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
-  if (tab === 'vault') renderVault(_vaultTab);
+  if (tab === 'vault')      renderVault(_vaultTab);
+  if (tab === 'blacksmith') renderBlacksmith();
   const challengesTab = document.getElementById('challenges-tab');
   const statsTab      = document.getElementById('stats-tab');
   if (tab === 'character') {
