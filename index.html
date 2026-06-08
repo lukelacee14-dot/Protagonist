@@ -564,12 +564,154 @@
     }
 
     /* ── Stats panel ── */
+    /* ── Stats panel (lives inside the scroll, not in char-scroll flow) ── */
     .char-stats-panel {
       width: 100%;
-      max-width: 360px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+
+    /* ── Stats scroll tab (right edge trigger) ── */
+    #stats-tab {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 200;
+      width: 22px;
+      height: 64px;
+      background: #c9a84c;
+      border-radius: 4px 0 0 4px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.5);
+      transition: background 0.15s;
+    }
+    #stats-tab.visible { display: flex; }
+    #stats-tab:active  { background: #e8c060; }
+
+    #stats-tab-arrow {
+      font-size: 0.7rem;
+      color: #0a0810;
+      transition: transform 0.4s ease;
+      line-height: 1;
+    }
+    #stats-tab-arrow.open { transform: rotate(180deg); }
+
+    /* ── Stats overlay ── */
+    #stats-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 198;
+      background: rgba(0,0,0,0);
+      pointer-events: none;
+      transition: background 0.4s ease;
+    }
+    #stats-overlay.open {
+      background: rgba(0,0,0,0.4);
+      pointer-events: auto;
+    }
+
+    /* ── Stats scroll panel ── */
+    @keyframes scrollUnfurl {
+      from { transform: scaleX(0.04); opacity: 0.2; }
+      to   { transform: scaleX(1);    opacity: 1; }
+    }
+    @keyframes scrollFurl {
+      from { transform: scaleX(1);    opacity: 1; }
+      to   { transform: scaleX(0.04); opacity: 0; }
+    }
+
+    #stats-scroll-panel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: var(--nav-h);
+      width: 82%;
+      max-width: 340px;
+      background: #1a1208;
+      border-left: 2px solid #c9a84c;
+      z-index: 199;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform-origin: right center;
+      /* hidden state */
+      transform: scaleX(0.04);
+      opacity: 0;
+      pointer-events: none;
+      transition: none;
+    }
+    #stats-scroll-panel.open {
+      pointer-events: auto;
+      animation: scrollUnfurl 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    #stats-scroll-panel.closing {
+      pointer-events: none;
+      animation: scrollFurl 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+    }
+
+    /* parchment texture overlay */
+    #stats-scroll-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 28px,
+          rgba(201,168,76,0.04) 28px,
+          rgba(201,168,76,0.04) 29px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .stats-scroll-inner {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 14px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stats-scroll-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      color: #c9a84c;
+      letter-spacing: 0.1em;
+      text-align: center;
+      margin-bottom: 16px;
+      text-shadow: 0 0 16px rgba(201,168,76,0.3);
+    }
+
+    .stats-scroll-end {
+      position: relative;
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stats-scroll-end::before,
+    .stats-scroll-end::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #c9a84c88, transparent);
+    }
+    .stats-scroll-end-ornament {
+      font-size: 0.85rem;
+      color: #c9a84c;
+      padding: 0 8px;
+      opacity: 0.7;
     }
 
     .char-stat-row {
@@ -1031,102 +1173,26 @@
           </div>
         </div>
 
-        <!-- Stat rows -->
-        <div class="char-stats-panel" id="char-stats-panel">
-
-          <!-- Strength -->
-          <div class="char-stat-row">
-            <div class="char-stat-icon-wrap" style="border-color: var(--strength)">
-              <img class="char-stat-icon-img"
-                   src="stat-icon-strength-1.png" alt="Strength" />
-            </div>
-            <div class="char-stat-body">
-              <div class="char-stat-name-row">
-                <span class="char-stat-name" style="color: var(--strength)">Strength</span>
-                <span class="char-stat-lvl"  style="color: var(--strength)">LVL 1</span>
-              </div>
-              <div class="char-stat-bar-track">
-                <div class="char-stat-bar-fill"
-                     style="width:0%; background: var(--strength)"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Wisdom -->
-          <div class="char-stat-row">
-            <div class="char-stat-icon-wrap" style="border-color: var(--wisdom)">
-              <img class="char-stat-icon-img"
-                   src="stat-icon-wisdom-1.png" alt="Wisdom" />
-            </div>
-            <div class="char-stat-body">
-              <div class="char-stat-name-row">
-                <span class="char-stat-name" style="color: var(--wisdom)">Wisdom</span>
-                <span class="char-stat-lvl"  style="color: var(--wisdom)">LVL 1</span>
-              </div>
-              <div class="char-stat-bar-track">
-                <div class="char-stat-bar-fill"
-                     style="width:0%; background: var(--wisdom)"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Discipline -->
-          <div class="char-stat-row">
-            <div class="char-stat-icon-wrap" style="border-color: var(--discipline)">
-              <img class="char-stat-icon-img"
-                   src="stat-icon-discipline-1.png" alt="Discipline" />
-            </div>
-            <div class="char-stat-body">
-              <div class="char-stat-name-row">
-                <span class="char-stat-name" style="color: var(--discipline)">Discipline</span>
-                <span class="char-stat-lvl"  style="color: var(--discipline)">LVL 1</span>
-              </div>
-              <div class="char-stat-bar-track">
-                <div class="char-stat-bar-fill"
-                     style="width:0%; background: var(--discipline)"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charisma -->
-          <div class="char-stat-row">
-            <div class="char-stat-icon-wrap" style="border-color: var(--charisma)">
-              <img class="char-stat-icon-img"
-                   src="stat-icon-charisma-1.png" alt="Charisma" />
-            </div>
-            <div class="char-stat-body">
-              <div class="char-stat-name-row">
-                <span class="char-stat-name" style="color: var(--charisma)">Charisma</span>
-                <span class="char-stat-lvl"  style="color: var(--charisma)">LVL 1</span>
-              </div>
-              <div class="char-stat-bar-track">
-                <div class="char-stat-bar-fill"
-                     style="width:0%; background: var(--charisma)"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Creativity -->
-          <div class="char-stat-row">
-            <div class="char-stat-icon-wrap" style="border-color: var(--creativity)">
-              <img class="char-stat-icon-img"
-                   src="stat-icon-creativity-1.png" alt="Creativity" />
-            </div>
-            <div class="char-stat-body">
-              <div class="char-stat-name-row">
-                <span class="char-stat-name" style="color: var(--creativity)">Creativity</span>
-                <span class="char-stat-lvl"  style="color: var(--creativity)">LVL 1</span>
-              </div>
-              <div class="char-stat-bar-track">
-                <div class="char-stat-bar-fill"
-                     style="width:0%; background: var(--creativity)"></div>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /char-stats-panel -->
-
       </div><!-- /char-scroll -->
+
+      <!-- Stats scroll tab trigger (right edge) -->
+      <div id="stats-tab">
+        <span id="stats-tab-arrow">◀</span>
+      </div>
+
+      <!-- Stats scroll overlay -->
+      <div id="stats-overlay"></div>
+
+      <!-- Stats scroll panel -->
+      <div id="stats-scroll-panel">
+        <div class="stats-scroll-inner">
+          <div class="stats-scroll-title">YOUR STATS</div>
+          <div class="char-stats-panel" id="char-stats-panel"></div>
+          <div class="stats-scroll-end">
+            <span class="stats-scroll-end-ornament">✦</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Pull-out tab trigger -->
       <div id="challenges-tab">
@@ -2524,6 +2590,41 @@ document.getElementById('challenges-close').addEventListener('click', closeChall
 document.getElementById('challenges-overlay').addEventListener('click', closeChallengesPanel);
 
 /* ═══════════════════════════════════════════
+   STATS SCROLL PANEL
+═══════════════════════════════════════════ */
+let _statsScrollOpen = false;
+
+function openStatsScroll() {
+  if (_statsScrollOpen) return;
+  _statsScrollOpen = true;
+  renderCharacter(); // refresh stats before showing
+  const panel = document.getElementById('stats-scroll-panel');
+  panel.classList.remove('closing');
+  panel.classList.add('open');
+  document.getElementById('stats-overlay').classList.add('open');
+  document.getElementById('stats-tab-arrow').classList.add('open');
+}
+
+function closeStatsScroll() {
+  if (!_statsScrollOpen) return;
+  _statsScrollOpen = false;
+  const panel = document.getElementById('stats-scroll-panel');
+  panel.classList.remove('open');
+  panel.classList.add('closing');
+  document.getElementById('stats-overlay').classList.remove('open');
+  document.getElementById('stats-tab-arrow').classList.remove('open');
+  // clean up closing class after animation finishes
+  panel.addEventListener('animationend', () => {
+    panel.classList.remove('closing');
+  }, { once: true });
+}
+
+document.getElementById('stats-tab').addEventListener('click', () => {
+  _statsScrollOpen ? closeStatsScroll() : openStatsScroll();
+});
+document.getElementById('stats-overlay').addEventListener('click', closeStatsScroll);
+
+/* ═══════════════════════════════════════════
    TOAST NOTIFICATIONS
 ═══════════════════════════════════════════ */
 function showLevelUpToast(statName, newLevel) {
@@ -2582,11 +2683,15 @@ function switchTab(tab) {
   });
   if (tab === 'vault') renderVault(_vaultTab);
   const challengesTab = document.getElementById('challenges-tab');
+  const statsTab      = document.getElementById('stats-tab');
   if (tab === 'character') {
     challengesTab.classList.add('visible');
+    statsTab.classList.add('visible');
   } else {
     challengesTab.classList.remove('visible');
     closeChallengesPanel();
+    statsTab.classList.remove('visible');
+    closeStatsScroll();
   }
 }
 
